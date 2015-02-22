@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "bmp.h"
+#include "x.h"
 
 /*********************************
 *             MAIN               *
@@ -35,7 +36,10 @@ int main(int argc, char **argv)
   read_pixels(file, pixmap, width, height, depth);
 
   // Now do the transformation
-  invert_colors(pixmap, width, height, depth);
+  //invert_colors(pixmap, width, height, depth);
+
+  // Now finally display the image
+  display_image(pixmap, width, height);
 
   fclose(file);
   return 0;
