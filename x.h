@@ -19,25 +19,10 @@ unsigned int black;
 void update_screen(unsigned char *pixmap, int *width, int *height)
 {
   XClearWindow(dsp, win);
-
-  /*
-  int x, y, pixsize;
-  unsigned char *r, *g, *b;
-  for(y = (*height) - 1; y > 0; --y) {
-    for(x = 0; x < (*width); ++x) {
-      b = pixmap++;
-      g = pixmap++;
-      r = pixmap++;
-      XSetForeground(dsp, gc, ((*r)<<16)|((*g)<<8)|(*b));
-      XDrawPoint(dsp, win, gc, x, y);
-    }
-  }
-  */
-
   
-  XImage *ximage = XCreateImage(dsp, visual, 24, ZPixmap, 0, (char *)pixmap, *width, *height, 32, 32);
+  XImage *ximage = XCreateImage(dsp, visual, 24, ZPixmap, 0, (char *)pixmap, (unsigned int)*width, (unsigned int)*height, 32, 0);
   XPutImage(dsp, win, gc, ximage, 0, 0, 0, 0, *width, *height);
-  
+
   XFlush(dsp);
 }
 

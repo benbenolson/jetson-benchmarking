@@ -5,7 +5,7 @@ void print_24b_array(unsigned char *pixmap, int *width, int *height)
 {
   for(int i = 0; i < (*height); ++i) {
     for(int n = 0; n < (*width); ++n) {
-      for(int x = 0; x < 3; ++x) {
+      for(int x = 0; x < 4; ++x) {
         printf(" %3.5x ", *pixmap);
         ++pixmap;
       }
@@ -102,6 +102,8 @@ void read_pixels(FILE *file, unsigned char *pixmap, int *width, int *height, int
           fread(pixmap, 1, 1, file);
           ++pixmap;
         }
+        *pixmap = 1;
+        ++pixmap;
       }
       fseek(file, padding, SEEK_CUR);
     }
