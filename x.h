@@ -10,6 +10,7 @@ int YRES;
 int NPTS=10000;
 Display *dsp;
 Window win;
+Visual *visual;
 int screen;
 GC gc;
 unsigned int white;
@@ -19,6 +20,7 @@ void update_screen(unsigned char *pixmap, int *width, int *height)
 {
   XClearWindow(dsp, win);
 
+  /*
   int x, y, pixsize;
   unsigned char *r, *g, *b;
   for(y = (*height) - 1; y > 0; --y) {
@@ -30,20 +32,12 @@ void update_screen(unsigned char *pixmap, int *width, int *height)
       XDrawPoint(dsp, win, gc, x, y);
     }
   }
+  */
 
-/*
-  pixsize = 4;
-  for(y = ((*height) / pixsize) - 1; y > 0; y -= pixsize) {
-    for(x = 0; x < ((*width) / pixsize); x += pixsize) {
-      r = pixmap++;
-      g = pixmap++;
-      b = pixmap++;
-      XSetForeground(dsp, gc, ((*r)<<16)|((*g)<<8)|(*b));
-      XFillRectangle(dsp, win, gc, x, y, pixsize, pixsize);
-    }
-  }
-*/
-
+  
+  XImage *ximage = XCreateImage(dsp, visual, 24, ZPixmap, 0, (char *)pixmap, *width, *height, 32, 32);
+  XPutImage(dsp, win, gc, ximage, 0, 0, 0, 0, *width, *height);
+  
   XFlush(dsp);
 }
 
@@ -59,9 +53,18 @@ int display_image(unsigned char *pixmap, int *width, int *height)
     XCloseDisplay(dsp);
     return -1;
   }
-
-  XRES = DisplayWidth(dsp,screen)/2;
-  YRES = DisplayHeight(dsp,screen)/2;
+  
+  if(DisplayWidth(dsp, screen) >= *width) {
+    XRES = *width;
+  } else {
+    XRES = DisplayWidth(dsp, screen);
+  }
+  
+  if(DisplayHeight(dsp, screen) >= *height) {
+    YRES = *height;
+  } else {
+    YRES = DisplayHeight(dsp, screen);
+  }
 
   white = WhitePixel(dsp,screen);
   black = BlackPixel(dsp,screen);

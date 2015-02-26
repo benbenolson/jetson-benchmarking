@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <argp.h>
 #include "bmp.h"
 #include "x.h"
+#include "transform_cpu.h"
 
 /*********************************
 *             MAIN               *
@@ -36,7 +38,13 @@ int main(int argc, char **argv)
   read_pixels(file, pixmap, width, height, depth);
 
   // Now do the transformation
-  //invert_colors(pixmap, width, height, depth);
+  clock_t t0, t1;
+  printf("Inverting the image...\n");
+  t0 = clock();
+  apply_gamma(pixmap, width, height, depth, 1.05);
+  t1 = clock();
+  printf("invert_colors() took %f seconds.\n", (double)((t1 - t0) / CLOCKS_PER_SEC));
+  fflush(stdout);
 
   // Now finally display the image
   display_image(pixmap, width, height);
