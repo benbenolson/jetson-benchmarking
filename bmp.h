@@ -98,23 +98,8 @@ void read_pixels(FILE *file, unsigned char *pixmap, int *width, int *height, int
   for(int i = 0; i < ((*height) * (*width) * 4); ++i) {
     ++pixmap;
   }
-/*
-  if(*depth == 24) {
-    unsigned char *beg = pixmap;
-    for(int i = 0; i < (*height); ++i) {
-      for(int n = 0; n < (*width); ++n) {
-        *pixmap = 0;
-        pixmap -= 3;
-        for(int x = 0; x < 3; ++x) {
-          fread(pixmap, 1, 1, file);
-          ++pixmap;
-        }
-        pixmap -= 4;
-      }
-      fseek(file, padding, SEEK_CUR);
-    }
-  }
-  */
+  
+  // Read in the image data (flipping horizontally)
   if(*depth == 24) {
     unsigned char *beg = pixmap;
     for(int i = 0; i < (*height); ++i) {

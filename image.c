@@ -37,16 +37,14 @@ int main(int argc, char **argv)
   pixmap = malloc(((*width) * (*height) * 4));
   read_pixels(file, pixmap, width, height, depth);
   
-  /*
   // Now do the transformation
   clock_t t0, t1;
   printf("Inverting the image...\n");
   t0 = clock();
-  apply_gamma(pixmap, width, height, depth, 1);
+  apply_gamma(pixmap, width, height, depth, 1.05);
   t1 = clock();
   printf("invert_colors() took %f seconds.\n", (double)((t1 - t0) / CLOCKS_PER_SEC));
   fflush(stdout);
-  */
 
   // Now finally display the image
   display_image(pixmap, width, height);

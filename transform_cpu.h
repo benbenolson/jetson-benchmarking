@@ -13,6 +13,7 @@ void invert_colors(unsigned char *pixmap, int *width, int *height, int *depth)
           *pixmap = 255 - (*pixmap);
           ++pixmap;
         }
+        ++pixmap;
       }
     }
   }
@@ -32,6 +33,7 @@ void apply_gamma(unsigned char *pixmap, int *width, int *height, int *depth, flo
           *pixmap = pow((*pixmap), gam);
           ++pixmap;
         }
+        ++pixmap;
       }
     }
   }
