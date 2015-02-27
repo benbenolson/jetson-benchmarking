@@ -16,9 +16,9 @@ GC gc;
 unsigned int white;
 unsigned int black;
 
-void update_screen(unsigned char *pixmap, int *width, int *height)
+void update_screen(unsigned char *pixmap, int *width, int *height, int *depth)
 {
-  XClearWindow(dsp, win);
+//  XClearWindow(dsp, win);
   
   XImage *ximage = XCreateImage(dsp, visual, 24, ZPixmap, 0, (char *)pixmap, (unsigned int)*width, (unsigned int)*height, 32, 0);
   XPutImage(dsp, win, gc, ximage, 0, 0, 0, 0, *width, *height);
@@ -26,7 +26,7 @@ void update_screen(unsigned char *pixmap, int *width, int *height)
   XFlush(dsp);
 }
 
-int display_image(unsigned char *pixmap, int *width, int *height)
+int display_image(unsigned char *pixmap, int *width, int *height, int *depth)
 {
   dsp = XOpenDisplay( NULL );
   if( !dsp ){ return 1; }
@@ -76,8 +76,10 @@ int display_image(unsigned char *pixmap, int *width, int *height)
   eventMask |= ButtonPressMask|ButtonReleaseMask|KeyPressMask|KeyReleaseMask;
   XSelectInput(dsp, win, eventMask);
 
-  KeyCode keyQ;
+  KeyCode keyQ, keyW, keyS;
   keyQ = XKeysymToKeycode(dsp, XStringToKeysym("Q"));
+  keyW = XKeysymToKeycode(dsp, XStringToKeysym("W"));
+  keyS = XKeysymToKeycode(dsp, XStringToKeysym("S"));
 
   XMapWindow(dsp, win);
 
@@ -85,24 +87,25 @@ int display_image(unsigned char *pixmap, int *width, int *height)
   do { XNextEvent(dsp,&evt); } while (evt.type != MapNotify);
 
   srand(time(0)); // only 1 sec resolution so use once per run
-  update_screen(pixmap, width, height);
+  update_screen(pixmap, width, height, depth);
 
   int loop = 1;
   while(loop) {
     XNextEvent(dsp, &evt);
     switch(evt.type) {
-      case(ButtonRelease):
-        update_screen(pixmap, width, height);
-        break;
       case(KeyRelease):
-        if(evt.xkey.keycode == keyQ) { loop = 0; break; }
-        update_screen(pixmap, width, height);
+        if(evt.xkey.keycode == keyQ) {
+          loop = 0; break;
+        } else if(evt.xkey.keycode == keyW) { 
+          apply_gamma(pixmap, width, height, depth, 1.2);
+        } else if(evt.xkey.keycode == keyS) {
+          apply_gamma(pixmap, width, height, depth, 1 / 1.2);
+        }
         break;
       case(ConfigureNotify):
         if(evt.xconfigure.width != XRES || evt.xconfigure.height != YRES) {
           XRES = evt.xconfigure.width;
           YRES = evt.xconfigure.height;
-          update_screen(pixmap, width, height);
         }
         break;
       case(ClientMessage):
@@ -111,6 +114,7 @@ int display_image(unsigned char *pixmap, int *width, int *height)
       default:
         break;
     }
+    update_screen(pixmap, width, height, depth);
   } 
 
   XDestroyWindow(dsp, win);
@@ -118,4 +122,3 @@ int display_image(unsigned char *pixmap, int *width, int *height)
 
   return 0;
 }
-
