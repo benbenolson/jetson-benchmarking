@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <argp.h>
-#include "transform_cpu.h"
+#include "timing.h"
+#include "transform_thread2.h"
 #include "bmp.h"
 #include "x.h"
 
@@ -35,8 +35,8 @@ int main(int argc, char **argv)
 
   // Now read in the pixel array
   pixmap = malloc(((*width) * (*height) * 4));
-  read_pixels(file, pixmap, width, height, depth);
-  display_image(pixmap, width, height, depth);
+  read_pixels(file, pixmap, *width, *height, *depth);
+  display_image(pixmap, *width, *height, *depth);
 
   fclose(file);
   return 0;

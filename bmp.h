@@ -85,26 +85,26 @@ void read_header(FILE *file, int *type, int *width, int *height, int *depth, int
 /*********************************
 *        READ_PIXELS             *
 *********************************/
-void read_pixels(FILE *file, unsigned char *pixmap, int *width, int *height, int *depth)
+void read_pixels(FILE *file, unsigned char *pixmap, int width, int height, int depth)
 {
   // Calculate the number of bytes of padding per row
-  int rowsize = ((((*depth) * (*width)) + 31) / 32) * 4;
-  int padding = rowsize - ((*width) * 3);
+  int rowsize = ((((depth) * (width)) + 31) / 32) * 4;
+  int padding = rowsize - ((width) * 3);
 
   // Make sure we can get back to the beginning
   unsigned char *beg = pixmap;
 
   // Put the pointer at the end of the array (since BMPs are stored backwards)
-  for(int i = 0; i < ((*height) * (*width) * 4); ++i) {
+  for(int i = 0; i < ((height) * (width) * 4); ++i) {
     ++pixmap;
   }
   
   // Read in the image data (flipping horizontally)
-  if(*depth == 24) {
+  if(depth == 24) {
     unsigned char *beg = pixmap;
-    for(int i = 0; i < (*height); ++i) {
-      pixmap -= ((*width) * 4);
-      for(int n = 0; n < (*width); ++n) {
+    for(int i = 0; i < (height); ++i) {
+      pixmap -= ((width) * 4);
+      for(int n = 0; n < (width); ++n) {
         for(int x = 0; x < 3; ++x) {
           fread(pixmap, 1, 1, file);
           ++pixmap;
@@ -113,7 +113,7 @@ void read_pixels(FILE *file, unsigned char *pixmap, int *width, int *height, int
         ++pixmap;
       }
       fseek(file, padding, SEEK_CUR);
-      pixmap -= ((*width) * 4);
+      pixmap -= ((width) * 4);
     }
   }
   pixmap = beg;

@@ -16,17 +16,15 @@ GC gc;
 unsigned int white;
 unsigned int black;
 
-void update_screen(unsigned char *pixmap, int *width, int *height, int *depth)
+void update_screen(unsigned char *pixmap, int width, int height, int depth)
 {
-//  XClearWindow(dsp, win);
-  
-  XImage *ximage = XCreateImage(dsp, visual, 24, ZPixmap, 0, (char *)pixmap, (unsigned int)*width, (unsigned int)*height, 32, 0);
-  XPutImage(dsp, win, gc, ximage, 0, 0, 0, 0, *width, *height);
+  XImage *ximage = XCreateImage(dsp, visual, 24, ZPixmap, 0, (char *)pixmap, (unsigned int)width, (unsigned int)height, 32, 0);
+  XPutImage(dsp, win, gc, ximage, 0, 0, 0, 0, width, height);
 
   XFlush(dsp);
 }
 
-int display_image(unsigned char *pixmap, int *width, int *height, int *depth)
+int display_image(unsigned char *pixmap, int width, int height, int depth)
 {
   dsp = XOpenDisplay( NULL );
   if( !dsp ){ return 1; }
@@ -39,14 +37,14 @@ int display_image(unsigned char *pixmap, int *width, int *height, int *depth)
     return -1;
   }
   
-  if(DisplayWidth(dsp, screen) >= *width) {
-    XRES = *width;
+  if(DisplayWidth(dsp, screen) >= width) {
+    XRES = width;
   } else {
     XRES = DisplayWidth(dsp, screen);
   }
   
-  if(DisplayHeight(dsp, screen) >= *height) {
-    YRES = *height;
+  if(DisplayHeight(dsp, screen) >= height) {
+    YRES = height;
   } else {
     YRES = DisplayHeight(dsp, screen);
   }
@@ -96,8 +94,8 @@ int display_image(unsigned char *pixmap, int *width, int *height, int *depth)
       case(KeyRelease):
         if(evt.xkey.keycode == keyQ) {
           loop = 0; break;
-        } else if(evt.xkey.keycode == keyW) { 
-          apply_gamma(pixmap, width, height, depth, 1.2);
+        } else if(evt.xkey.keycode == keyW) {
+          timing(apply_gamma(pixmap, width, height, depth, 1.2));
         } else if(evt.xkey.keycode == keyS) {
           apply_gamma(pixmap, width, height, depth, 1 / 1.2);
         }
