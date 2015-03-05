@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "timing.h"
-#include "transform_thread2.h"
+#include "transform_thread.h"
 #include "bmp.h"
-#include "x.h"
+#include "displayimage.h"
 
 /*********************************
 *             MAIN               *
@@ -14,7 +14,7 @@ int main(int argc, char **argv)
   int *size, *width, *height,
       *depth, *compress, *horiz, 
       *vert, *colors, *type;
-  unsigned char *pixmap;
+  unsigned char *pixmap, *pixmapmod;
 
   if(argc != 2) {
     fprintf(stderr, "Usage: ./image [filename]\n");
@@ -35,8 +35,9 @@ int main(int argc, char **argv)
 
   // Now read in the pixel array
   pixmap = malloc(((*width) * (*height) * 4));
-  read_pixels(file, pixmap, *width, *height, *depth);
-  display_image(pixmap, *width, *height, *depth);
+  pixmapmod = malloc(((*width) * (*height) * 4));
+  read_pixels(file, pixmap, pixmapmod, *width, *height, *depth);
+  display_image(pixmap, pixmapmod, *width, *height, *depth);
 
   fclose(file);
   return 0;

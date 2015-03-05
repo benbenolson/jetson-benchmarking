@@ -1,3 +1,6 @@
+#ifndef TIMING_H
+#define TIMING_H
+
 #define timing(a) gettimeofday(&before, NULL); a; gettimeofday(&after, NULL); timedifference(&after, &before);
 
 struct timeval before;
@@ -18,3 +21,5 @@ void timedifference(struct timeval *x, struct timeval *y)
 
   printf("The operation took %ld seconds and %ld microseconds.\n", x->tv_sec - y->tv_sec, x->tv_usec - y->tv_usec);
 }
+
+#endif
