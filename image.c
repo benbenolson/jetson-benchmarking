@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "timing.h"
-#include "transform_thread.h"
-#include "bmp.h"
-#include "displayimage.h"
+#include "timing/timing.h"
+#include "transform/transform_thread.h"
+#include "bmp/bmp.h"
+#include "displayimage/displayimage.h"
 
 /*********************************
 *             MAIN               *
