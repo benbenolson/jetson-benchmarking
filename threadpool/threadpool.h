@@ -50,13 +50,14 @@ void *wait_thread(void *t)
     // Pop the task off the queue
     task = (struct Task *)queue_pop(&(threadpool->tasks));
     --(threadpool->pending);
-    
+
     // Release the threadpool's lock
     pthread_mutex_unlock(threadpool->lock);
     
     // Run the program
     *(task->function)(task->args);
   }
+  printf("THREAD DYING\n");
   return NULL;
 }
 

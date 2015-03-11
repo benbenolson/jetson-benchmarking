@@ -73,7 +73,6 @@ void queue_push(struct Queue **queue, void *data)
     tmp = tmp->next;
   }
   
-  // Allocate more room for the element
   if(tmp->data == NULL) {
     tmp->data = data;
     tmp->next = NULL;
@@ -81,6 +80,7 @@ void queue_push(struct Queue **queue, void *data)
     tmp->next = malloc(sizeof(struct Queue));
     tmp->next->data = data;
     tmp->next->prev = tmp;
+    tmp->next->next = NULL;
   }
 }
 
