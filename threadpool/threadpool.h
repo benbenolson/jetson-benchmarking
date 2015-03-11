@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include "../queue/queue.h"
 
-#define NUMTHREADS 2
+int NUMTHREADS;
 
 struct Task
 {
@@ -40,10 +40,9 @@ void *wait_thread(void *t)
 
   while(!threadpool->shutdown) {
     // Signal that you're ready
-//    pthread_mutex_unlock(thread->lock);
+    pthread_mutex_unlock(thread->lock);
 
     // Wait on a task to appear
-    printf("Waiting on a task\n");
     while(threadpool->pending == 0) {
       pthread_cond_wait(threadpool->cond, threadpool->lock);
     }
@@ -51,14 +50,11 @@ void *wait_thread(void *t)
     // Pop the task off the queue
     task = (struct Task *)queue_pop(&(threadpool->tasks));
     --(threadpool->pending);
-    printf("Popped task off of the queue %p\n", task);
     
     // Release the threadpool's lock
-    printf("Unlocking the threadpool\n");
     pthread_mutex_unlock(threadpool->lock);
     
     // Run the program
-    printf("About to run the function\n");
     *(task->function)(task->args);
   }
   return NULL;
@@ -81,12 +77,7 @@ void task_create(struct Threadpool *threadpool, void *(*function)(void *), void 
   queue_push(&(threadpool->tasks), (void *)(task));
   ++(threadpool->pending);
 
-  printf("A task is now ready:\n");
-  fflush(stdout);
-  queue_print(&(threadpool->tasks));
-
   // Signal the threadpool that a task has been added
-  printf("SIGNAL\n");
   pthread_cond_signal(threadpool->cond);
   pthread_mutex_unlock(threadpool->lock);
 }
@@ -113,9 +104,12 @@ void thread_create(struct Thread **thread, struct Threadpool *threadpool)
   ++(threadpool->size);
 }
 
-void threadpool_create(struct Threadpool *threadpool)
+void threadpool_create(struct Threadpool *threadpool, int numthreads)
 {
   struct Thread **thread;
+
+  // Set the number of threads
+  NUMTHREADS = numthreads;
 
   //Initialize the threadpool
   threadpool->size = 0;
@@ -141,14 +135,12 @@ void threadpool_create(struct Threadpool *threadpool)
   while(threadpool->size != NUMTHREADS) {}
 
   // Wait for the threads to be ready
-  /*
   thread = threadpool->threads;
   for(int i = 0; i < NUMTHREADS; ++i) {
     pthread_mutex_lock((*thread)->lock);
     pthread_mutex_unlock((*thread)->lock);
     ++thread;
   }
-  */
 }
 
 void threadpool_end(struct Threadpool *threadpool)

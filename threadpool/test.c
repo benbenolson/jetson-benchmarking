@@ -7,8 +7,6 @@ struct Args
 
 void *testfunc(void *args)
 {
-  printf("Running the function\n");
-  fflush(stdout);
   printf("The argument is %d\n", (*(int *)args));
   return NULL;
 }
@@ -28,6 +26,10 @@ int main()
   threadpool_create(&threadpool);
   task_create(&threadpool, &testfunc, args);
   task_create(&threadpool, &testfunc, args2);
+  task_create(&threadpool, &testfunc, args3);
+  task_create(&threadpool, &testfunc, args3);
+  task_create(&threadpool, &testfunc, args3);
+  task_create(&threadpool, &testfunc, args3);
   task_create(&threadpool, &testfunc, args3);
   threadpool_end(&threadpool);
 }

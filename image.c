@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "timing/timing.h"
-#include "transform/transform_thread.h"
+#include "transform/transform_threadpool.h"
 #include "bmp/bmp.h"
 #include "displayimage/displayimage.h"
 

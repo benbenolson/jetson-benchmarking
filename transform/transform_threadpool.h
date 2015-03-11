@@ -3,19 +3,16 @@
 
 #include <math.h>
 #include <pthread.h>
-#include "threadpool.h"
+#include "../threadpool/threadpool.h"
 
-struct thread_arguments
+struct Threadpool *threadpool;
+
+struct Args
 {
   int width, height, depth;
   float gam;
   unsigned char *pixmap, *pixmapmod;
 };
-
-/*********************************
-*     CREATE THE THREAD POOL     *
-*********************************/
-
 
 /*********************************
 *         INVERT_COLORS          *
@@ -43,7 +40,7 @@ void invert_colors(unsigned char *pixmap, int width, int height, int depth)
 
 void *gamma_subset(void *args)
 {
-  struct thread_arguments *pic = (struct thread_arguments *)args;
+  struct Args *pic = (struct Args *)args;
   unsigned char *beg = pic->pixmap;
   unsigned char tmp;
   if(pic->depth == 24) {
@@ -71,39 +68,28 @@ void *gamma_subset(void *args)
 
 void apply_gamma(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, float gam)
 {
-  pthread_t tid;
-  struct thread_arguments args;
-  args.width = width;
-  args.height = height / 3;
-  args.depth = depth;
-  args.gam = gam;
-  args.pixmap = pixmap;
-  args.pixmapmod = pixmapmod;
-  pthread_create(&tid, NULL, gamma_subset, &args);
+  struct Args *args;
 
-  pthread_t tid2;
-  struct thread_arguments args2;
-  args2.width = width;
-  args2.height = height / 3;
-  args2.depth = depth;
-  args2.gam = gam;
-  args2.pixmap = pixmap + (4 * width * (height / 3));
-  args2.pixmapmod = pixmapmod + (4 * width * (height / 3));
-  pthread_create(&tid2, NULL, gamma_subset, &args2);
+  int numthreads = 1;
 
-  pthread_t tid3;
-  struct thread_arguments args3;
-  args3.width = width;
-  args3.height = height / 3;
-  args3.depth = depth;
-  args3.gam = gam;
-  args3.pixmap = pixmap + 2 * (4 * width * (height / 3));
-  args3.pixmapmod = pixmapmod + 2 * (4 * width * (height / 3));
-  pthread_create(&tid3, NULL, gamma_subset, &args3);
+  // If you haven't already, create the threadpool
+  if(!threadpool) {
+    printf("Creating a threadpool.\n");
+    threadpool = malloc(sizeof(struct Threadpool));
+    threadpool_create(threadpool, numthreads);
+  }
 
-  pthread_join(tid, NULL);
-  pthread_join(tid2, NULL);
-  pthread_join(tid3, NULL);
+  for(int i = 0; i < numthreads; ++i) {
+    args = malloc(sizeof(struct Args));
+    args->width = width;
+    args->height = height / numthreads;
+    args->depth = depth;
+    args->gam = gam;
+    args->pixmap = pixmap + (i * (4 * width * (height / numthreads)));
+    args->pixmapmod = pixmapmod + (i * (4 * width * (height / numthreads)));
+    printf("This thread is doing %d pixels.\n", width * (height / numthreads));
+    task_create(threadpool, &gamma_subset, args);
+  }
 }
 
 #endif
