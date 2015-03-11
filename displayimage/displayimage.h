@@ -36,39 +36,52 @@ void update_screen(unsigned char *pixmap, int width, int height, int depth)
 void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, struct Keys *keys, XEvent *evt, Atom *wmDelete)
 {
   float gamma = 1;
+  struct timeval tv;
+
+  int x11_fd = ConnectionNumber(dsp);
+  fd_set in_fds;
 
   int loop = 1;
   while(loop) {
-    XNextEvent(dsp, evt);
-    switch(evt->type) {
-      case(KeyRelease):
-        if(evt->xkey.keycode == keys->Q) {
-          loop = 0; break;
-        } else if(evt->xkey.keycode == keys->W) {
-          if(gamma < 10.0) {
-            gamma += 0.1;
-            timing(apply_gamma(pixmap, pixmapmod, width, height, depth, gamma));
+    FD_ZERO(&in_fds);
+    FD_SET(x11_fd, &in_fds);
+    tv.tv_usec = 33333.3;
+    tv.tv_sec = 0;
+    if(select(x11_fd + 1, &in_fds, 0, 0, &tv)) {
+      switch(evt->type) {
+        case(KeyRelease):
+          if(evt->xkey.keycode == keys->Q) {
+            loop = 0; break;
+          } else if(evt->xkey.keycode == keys->W) {
+            if(gamma < 10.0) {
+              gamma += 0.1;
+              timing(apply_gamma(pixmap, pixmapmod, width, height, depth, gamma));
+            }
+          } else if(evt->xkey.keycode == keys->S) {
+            if(gamma > 0.0) {
+              gamma -= 0.1;
+              timing(apply_gamma(pixmap, pixmapmod, width, height, depth, gamma));
+            }
           }
-        } else if(evt->xkey.keycode == keys->S) {
-          if(gamma > 0.0) {
-            gamma -= 0.1;
-            timing(apply_gamma(pixmap, pixmapmod, width, height, depth, gamma));
+          break;
+        case(ConfigureNotify):
+          if(evt->xconfigure.width != XRES || evt->xconfigure.height != YRES) {
+            XRES = evt->xconfigure.width;
+            YRES = evt->xconfigure.height;
           }
-        }
-        break;
-      case(ConfigureNotify):
-        if(evt->xconfigure.width != XRES || evt->xconfigure.height != YRES) {
-          XRES = evt->xconfigure.width;
-          YRES = evt->xconfigure.height;
-        }
-        break;
-      case(ClientMessage):
-        if(evt->xclient.data.l[0] == *wmDelete) loop = 0;
-        break;
-      default:
-        break;
+          break;
+        case(ClientMessage):
+          if(evt->xclient.data.l[0] == *wmDelete) loop = 0;
+          break;
+        default:
+          break;
+      }
+    } else {
+      update_screen(pixmapmod, width, height, depth);
     }
-    update_screen(pixmapmod, width, height, depth);
+    while(XPending(dsp)) {
+      XNextEvent(dsp, evt);
+    }
   } 
 }
 
@@ -132,7 +145,7 @@ int display_image(unsigned char *pixmap, unsigned char *pixmapmod, int width, in
   // wait until window appears
   do { XNextEvent(dsp,&evt); } while (evt.type != MapNotify);
 
-  srand(time(0)); // only 1 sec resolution so use once per run
+  srand(time(0));
   update_screen(pixmap, width, height, depth);
   
   event_loop(pixmap, pixmapmod, width, height, depth, &keys, &evt, &wmDelete);

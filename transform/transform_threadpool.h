@@ -70,7 +70,7 @@ void apply_gamma(unsigned char *pixmap, unsigned char *pixmapmod, int width, int
 {
   struct Args *args;
 
-  int numthreads = 1;
+  int numthreads = 10;
 
   // If you haven't already, create the threadpool
   if(!threadpool) {

@@ -105,7 +105,6 @@ void read_pixels(FILE *file, unsigned char *pixmap, unsigned char *pixmapmod, in
   
   // Read in the image data (flipping horizontally)
   if(depth == 24) {
-    unsigned char *beg = pixmap;
     for(int i = 0; i < (height); ++i) {
       pixmap -= ((width) * 4);
       pixmapmod -= ((width) * 4);

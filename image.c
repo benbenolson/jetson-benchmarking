@@ -10,10 +10,9 @@
 *********************************/
 int main(int argc, char **argv)
 {
-  char *head;
   int *size, *width, *height,
       *depth, *compress, *horiz, 
-      *vert, *colors, *type;
+      *vert, *type;
   unsigned char *pixmap, *pixmapmod;
 
   if(argc != 2) {
