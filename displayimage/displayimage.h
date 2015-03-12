@@ -27,9 +27,10 @@ struct Keys
 
 void update_screen(unsigned char *pixmap, int width, int height, int depth)
 {
-  XImage *ximage = XCreateImage(dsp, visual, 24, ZPixmap, 0, (char *)pixmap, (unsigned int)width, (unsigned int)height, 32, 0);
+  XImage *ximage = XCreateImage(dsp, visual, 24, ZPixmap, 0, 
+                                (char *)pixmap, (unsigned int)width, 
+                                (unsigned int)height, 32, 0);
   XPutImage(dsp, win, gc, ximage, 0, 0, 0, 0, width, height);
-
   XFlush(dsp);
 }
 
@@ -45,7 +46,7 @@ void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, int width, int 
   while(loop) {
     FD_ZERO(&in_fds);
     FD_SET(x11_fd, &in_fds);
-    tv.tv_usec = 33333.3;
+    tv.tv_usec = 33333;
     tv.tv_sec = 0;
     if(select(x11_fd + 1, &in_fds, 0, 0, &tv)) {
       switch(evt->type) {

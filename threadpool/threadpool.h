@@ -26,7 +26,8 @@ struct Threadpool
   int size;
   int shutdown;
   int pending;
-  pthread_mutex_t *lock;
+  pthread_mutex_t *tasklock;
+  pthread_mutex_t *threadlock;
   pthread_cond_t *cond;
   struct Queue *tasks;
   struct Thread **threads;
