@@ -74,7 +74,6 @@ void apply_gamma(unsigned char *pixmap, unsigned char *pixmapmod, int width, int
 
   // If you haven't already, create the threadpool
   if(!threadpool) {
-    printf("Creating a threadpool.\n");
     threadpool = malloc(sizeof(struct Threadpool));
     threadpool_create(threadpool, numthreads);
   }
@@ -87,7 +86,6 @@ void apply_gamma(unsigned char *pixmap, unsigned char *pixmapmod, int width, int
     args->gam = gam;
     args->pixmap = pixmap + (i * (4 * width * (height / numthreads)));
     args->pixmapmod = pixmapmod + (i * (4 * width * (height / numthreads)));
-    printf("This thread is doing %d pixels.\n", width * (height / numthreads));
     task_create(threadpool, &gamma_subset, args);
   }
 }

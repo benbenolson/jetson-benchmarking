@@ -13,9 +13,7 @@ void *wait_thread(void *t)
     clock_gettime(CLOCK_REALTIME, &timer);
     timer.tv_nsec += 1;
     while(!(threadpool->shutdown) && (threadpool->pending == 0)) {
-      printf("Thread %lu is waiting on a task still, %d\n", *(thread->tid), threadpool->pending);
       pthread_cond_timedwait(threadpool->cond, threadpool->tasklock, &timer);
-      printf("Tired of waiting.\n");
     }
     
     if((threadpool->pending == 0) && (threadpool->shutdown)) {
@@ -33,7 +31,6 @@ void *wait_thread(void *t)
     // Run the program
     *(task->function)(task->args);
   }
-  printf("THREAD DYING\n");
   return NULL;
 }
 
@@ -104,7 +101,6 @@ void threadpool_create(struct Threadpool *threadpool, int numthreads)
   threadpool->tasks = malloc(sizeof(struct Queue));
   queue_init(&(threadpool->tasks));
   threadpool->threads = malloc(sizeof(struct Thread *) * numthreads);
-  printf("Allocated %d bytes for threads\n", sizeof(struct Thread *) * numthreads);
 
   // Initialize the mutex and cond
   pthread_mutex_init(threadpool->tasklock, NULL);
@@ -115,21 +111,8 @@ void threadpool_create(struct Threadpool *threadpool, int numthreads)
   thread = threadpool->threads;
   for(int i = 0; i < NUMTHREADS; ++i) {
     thread_create(thread, threadpool);
-    printf("Successfully created process %lu\n", *((*thread)->tid));
     ++thread;
   }
-
-//  while(threadpool->size != NUMTHREADS) {}
-
-  // Wait for the threads to be ready
-  /*
-  thread = threadpool->threads;
-  for(int i = 0; i < NUMTHREADS; ++i) {
-    pthread_mutex_lock((*thread)->lock);
-    pthread_mutex_unlock((*thread)->lock);
-    ++thread;
-  }
-  */
 }
 
 void threadpool_end(struct Threadpool *threadpool)
@@ -140,9 +123,7 @@ void threadpool_end(struct Threadpool *threadpool)
   threadpool->shutdown = 1;
   thread = threadpool->threads;
   for(int i = 0; i < NUMTHREADS; ++i) {
-    printf("Waiting on a thread to die.\n");
     pthread_join(*((*thread)->tid), NULL);
-    printf("Successfully joined thread %lu\n", *((*thread)->tid));
     ++thread;
   }
   pthread_mutex_unlock(threadpool->threadlock);
