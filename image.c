@@ -36,6 +36,12 @@ int main(int argc, char **argv)
   struct XWin **xwin = calloc(sizeof(struct XWin *), 1);
   xwindow_init(pixmap, pixmapmod, width, height, depth, xwin);
   event_loop(pixmap, pixmapmod, width, height, depth, xwin);
+  xwindow_del(xwin);
+
+  // Clean up
+  free(pixmap);
+  free(pixmapmod);
+  free(xwin);
 
   fclose(file);
   return 0;

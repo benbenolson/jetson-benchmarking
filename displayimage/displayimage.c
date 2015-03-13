@@ -130,8 +130,12 @@ void xwindow_init(unsigned char *pixmap, unsigned char *pixmapmod, int width, in
   do { XNextEvent((*xwin)->dsp, (*xwin)->evt); } while ((*xwin)->evt->type != MapNotify);
 }
 
-void xwindow_del(struct XWin *xwin)
+void xwindow_del(struct XWin **xwin)
 {
-  XDestroyWindow(xwin->dsp, xwin->win);
-  XCloseDisplay(xwin->dsp);
+  XDestroyWindow((*xwin)->dsp, (*xwin)->win);
+  XCloseDisplay((*xwin)->dsp);
+
+  free((*xwin)->keys);
+  free((*xwin)->evt);
+  free(*xwin);
 }
