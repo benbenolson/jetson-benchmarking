@@ -1,7 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "timing/timing.h"
-#include "transform/transform_threadpool.h"
 #include "bmp/bmp.h"
 #include "displayimage/displayimage.h"
 
@@ -10,9 +8,12 @@
 *********************************/
 int main(int argc, char **argv)
 {
-  int *size, *width, *height,
-      *depth, *compress, *horiz, 
-      *vert, *type;
+  int size = 0;
+  int width = 0;
+  int height = 0;
+  int depth = 0;
+  int compress = 0;
+  int type = 0;
   unsigned char *pixmap, *pixmapmod;
 
   if(argc != 2) {
@@ -23,20 +24,18 @@ int main(int argc, char **argv)
   // Open the file
   FILE *file = fopen(argv[1], "r");
 
-  // Allocate the necessary variables
-  width = malloc(4); height = malloc(4);
-  depth = malloc(2); compress = malloc(4);
-  horiz = malloc(4); vert = malloc(4);
-  size = malloc(4); type = malloc(4);
-
   // Read in the header information
-  read_header(file, type, width, height, depth, compress, size);
+  read_header(file, &type, &width, &height, &depth, &compress, &size);
 
   // Now read in the pixel array
-  pixmap = malloc(((*width) * (*height) * 4));
-  pixmapmod = malloc(((*width) * (*height) * 4));
-  read_pixels(file, pixmap, pixmapmod, *width, *height, *depth);
-  display_image(pixmap, pixmapmod, *width, *height, *depth);
+  pixmap = calloc(((width) * (height) * 4), 1);
+  pixmapmod = calloc(((width) * (height) * 4), 1);
+  read_pixels(file, pixmap, pixmapmod, width, height, depth);
+
+  // Finally, display the image.
+  struct XWin **xwin = calloc(sizeof(struct XWin *), 1);
+  xwindow_init(pixmap, pixmapmod, width, height, depth, xwin);
+  event_loop(pixmap, pixmapmod, width, height, depth, xwin);
 
   fclose(file);
   return 0;
