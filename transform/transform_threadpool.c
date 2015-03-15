@@ -26,7 +26,7 @@ void invert_colors(unsigned char *pixmap, int width, int height, int depth)
 
 void *gamma_subset(void *args)
 {
-  struct Args *pic = (struct Args *)args;
+  struct Gamargs *pic = (struct Gamargs *)args;
   unsigned char *beg = pic->pixmap;
   unsigned char tmp;
   if(pic->depth == 24) {
@@ -52,11 +52,11 @@ void *gamma_subset(void *args)
   return NULL;
 }
 
-void apply_gamma(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, float gam)
+void *apply_gamma(void *args)
 {
-  struct Args *args;
-
   int numthreads = 10;
+  struct Gamargs *oldargs = args;
+  struct Gamargs *newargs;
 
   // If you haven't already, create the threadpool
   if(!threadpool) {
@@ -65,13 +65,17 @@ void apply_gamma(unsigned char *pixmap, unsigned char *pixmapmod, int width, int
   }
 
   for(int i = 0; i < numthreads; ++i) {
-    args = malloc(sizeof(struct Args));
-    args->width = width;
-    args->height = height / numthreads;
-    args->depth = depth;
-    args->gam = gam;
-    args->pixmap = pixmap + (i * (4 * width * (height / numthreads)));
-    args->pixmapmod = pixmapmod + (i * (4 * width * (height / numthreads)));
-    task_create(threadpool, &gamma_subset, args);
+    newargs = malloc(sizeof(struct Gamargs));
+    newargs->width = oldargs->width;
+    newargs->height = oldargs->height / numthreads;
+    newargs->depth = oldargs->depth;
+    newargs->gam = oldargs->gam;
+    newargs->pixmap = oldargs->pixmap + (i * (4 * oldargs->width * 
+                                        ((oldargs->height) / numthreads)));
+    newargs->pixmapmod = oldargs->pixmapmod + (i * (4 * oldargs->width * 
+                                              ((oldargs->height) / numthreads)));
+    task_create(threadpool, &gamma_subset, newargs);
   }
+  
+  return NULL;
 }

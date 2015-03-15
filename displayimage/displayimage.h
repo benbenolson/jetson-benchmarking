@@ -6,12 +6,13 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
-#include "../timing/timing.h"
-#include "../transform/transform_threadpool.h"
 
-struct Keys
+// Stores a key and what it should do
+struct Key
 {
-  KeyCode Q, W, S;
+  KeyCode keycode;
+  void *(*function)(void *);
+  void *args;
 };
 
 struct XWin
@@ -26,18 +27,33 @@ struct XWin
   Window win;
   Visual *visual;
   GC gc;
+  
+  // The image and attributes
+  XImage *ximage;
+  int width, height, depth;
 
+  // Vars for FPS
+  int connectnum;
+  fd_set input_fd;
+  struct timeval tv;
+
+  int should_close;
 
   // Key events
-  struct Keys *keys;
+  int numkeys;
+  struct Key **keys;
 };
 
-void update_screen(XImage *ximage, unsigned char *pixmap, int width, int height, 
-                   int depth, struct XWin *xwin);
-void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, 
-                int depth, struct XWin **xwin);
-void xwindow_init(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, 
-                  int depth, struct XWin **xwin);
-void xwindow_del(struct XWin **xwin);
+void update_screen(unsigned char *pixmap, struct XWin **xwin);
+int  input_ready  (struct XWin **xwin);
+void change_args  (int it, void *args, struct XWin **xwin);
+void flush_input  (struct XWin **xwin);
+int  get_key      (struct XWin **xwin);
+void handle_key   (int id, struct XWin **xwin);
+int create_key   (char *keyvalue, void *(*function)(void *), void *args,
+                   struct XWin **xwin);
+void xwindow_init (unsigned char *pixmap, unsigned char *pixmapmod, 
+                   int width, int height, int depth, struct XWin **xwin);
+void xwindow_del  (struct XWin **xwin);
 
 #endif

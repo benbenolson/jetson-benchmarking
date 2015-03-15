@@ -7,7 +7,7 @@
 
 struct Threadpool *threadpool;
 
-struct Args
+struct Gamargs
 {
   int width, height, depth;
   float gam;
@@ -16,6 +16,6 @@ struct Args
 
 void invert_colors(unsigned char *pixmap, int width, int height, int depth);
 void *gamma_subset(void *args);
-void apply_gamma(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, float gam);
+void *apply_gamma(void *args);
 
 #endif

@@ -1,69 +1,83 @@
 #include "displayimage.h"
 
-void update_screen(XImage *ximage, unsigned char *pixmap, int width, int height, int depth, struct XWin *xwin)
+void update_screen(unsigned char *pixmap, struct XWin **xwin)
 {
-  ximage->data = (char *)pixmap;
-  XPutImage(xwin->dsp, xwin->win, xwin->gc, ximage, 0, 0, 0, 0, width, height);
-  XFlush(xwin->dsp);
+  (*xwin)->ximage->data = (char *)pixmap;
+  XPutImage((*xwin)->dsp, (*xwin)->win, (*xwin)->gc, (*xwin)->ximage, 0, 0, 0, 0, (*xwin)->width, (*xwin)->height);
+  XFlush((*xwin)->dsp);
 }
 
-void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, struct XWin **xwin)
+void change_args(int id, void *args, struct XWin **xwin)
 {
-  int loop = 1;
-  float gamma = 1;
-  struct timeval tv;
+  (*((*xwin)->keys) + (id - 1))->args = args;
+}
 
-  int x11_fd = ConnectionNumber((*xwin)->dsp);
-  fd_set in_fds;
+void flush_input(struct XWin **xwin)
+{
+  while(XPending((*xwin)->dsp)) {
+    XNextEvent((*xwin)->dsp, (*xwin)->evt);
+  }
+}
 
-  XImage *ximage = XCreateImage((*xwin)->dsp, (*xwin)->visual, 24, ZPixmap, 0, 
-                                (char *)pixmap, (unsigned int)width, 
-                                (unsigned int)height, 32, 0);
+int input_ready(struct XWin **xwin)
+{
+  FD_ZERO(&((*xwin)->input_fd));
+  FD_SET((*xwin)->connectnum, &((*xwin)->input_fd));
+  (*xwin)->tv.tv_usec = 60000;
+  (*xwin)->tv.tv_sec = 0;
+  if(select((*xwin)->connectnum + 1, &((*xwin)->input_fd), 0, 0, &((*xwin)->tv))) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
 
-  srand(time(0));
-  update_screen(ximage, pixmap, width, height, depth, (*xwin));
+void handle_key(int id, struct XWin **xwin)
+{
+  (*(((*xwin)->keys) + (id - 1)))->function((*(((*xwin)->keys) + (id - 1)))->args);
+}
 
-  while(loop) {
-    FD_ZERO(&in_fds);
-    FD_SET(x11_fd, &in_fds);
-    tv.tv_usec = 33333;
-    tv.tv_sec = 0;
-    if(select(x11_fd + 1, &in_fds, 0, 0, &tv)) {
-      switch((*xwin)->evt->type) {
-        case(KeyRelease):
-          if((*xwin)->evt->xkey.keycode == (*xwin)->keys->Q) {
-            loop = 0; break;
-          } else if((*xwin)->evt->xkey.keycode == (*xwin)->keys->W) {
-            if(gamma < 10.0) {
-              gamma += 0.1;
-              timing(apply_gamma(pixmap, pixmapmod, width, height, depth, gamma));
-            }
-          } else if((*xwin)->evt->xkey.keycode == (*xwin)->keys->S) {
-            if(gamma > 0.0) {
-              gamma -= 0.1;
-              timing(apply_gamma(pixmap, pixmapmod, width, height, depth, gamma));
-            }
-          }
-          break;
-        case(ConfigureNotify):
-          if((*xwin)->evt->xconfigure.width != (*xwin)->xres || (*xwin)->evt->xconfigure.height != (*xwin)->yres) {
-            (*xwin)->xres = (*xwin)->evt->xconfigure.width;
-            (*xwin)->yres = (*xwin)->evt->xconfigure.height;
-          }
-          break;
-        case(ClientMessage):
-          if((*xwin)->evt->xclient.data.l[0] == (*xwin)->wmdelete) loop = 0;
-          break;
-        default:
-          break;
+int get_key(struct XWin **xwin)
+{
+  int i;
+  switch((*xwin)->evt->type) {
+    // Grab a key and return
+    case(KeyPress):
+      for(i = 0; i < (*xwin)->numkeys; ++i) {
+        if((*xwin)->evt->xkey.keycode == (*(((*xwin)->keys) + i))->keycode) {
+          return i + 1;
+        }
       }
-    } else {
-      update_screen(ximage, pixmapmod, width, height, depth, (*xwin));
-    }
-    while(XPending((*xwin)->dsp)) {
-      XNextEvent((*xwin)->dsp, (*xwin)->evt);
-    }
-  } 
+      break;
+    // Handle window resizes
+    case(ConfigureNotify):
+      if((*xwin)->evt->xconfigure.width != (*xwin)->xres || 
+         (*xwin)->evt->xconfigure.height != (*xwin)->yres) {
+        (*xwin)->xres = (*xwin)->evt->xconfigure.width;
+        (*xwin)->yres = (*xwin)->evt->xconfigure.height;
+      }
+      break;
+    // Handle closing the window
+    case(ClientMessage):
+      if((*xwin)->evt->xclient.data.l[0] == (*xwin)->wmdelete) {
+        (*xwin)->should_close = 1;
+      }
+      break;
+    default:
+      break;
+  }
+  return 0;
+}
+
+int create_key(char *keyvalue, void *(*function)(void *), 
+                void *args, struct XWin **xwin)
+{
+  struct Key **key = (*xwin)->keys + (*xwin)->numkeys;
+  *key = calloc(sizeof(struct Key), 1);
+  (*key)->keycode = XKeysymToKeycode((*xwin)->dsp, XStringToKeysym(keyvalue));
+  (*key)->function = function;
+  (*key)->args = args;
+  return ++((*xwin)->numkeys);
 }
 
 void xwindow_init(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, struct XWin **xwin)
@@ -73,7 +87,7 @@ void xwindow_init(unsigned char *pixmap, unsigned char *pixmapmod, int width, in
 
   // Allocate some space for the xvars
   *xwin = calloc(sizeof(struct XWin), 1);
-  (*xwin)->keys = malloc(sizeof(struct Keys));
+  (*xwin)->keys = malloc(sizeof(struct Key *) * 20);
   (*xwin)->evt = malloc(sizeof(XEvent));
 
   // Initialize the display
@@ -120,22 +134,37 @@ void xwindow_init(unsigned char *pixmap, unsigned char *pixmapmod, int width, in
   eventMask |= ButtonPressMask|ButtonReleaseMask|KeyPressMask|KeyReleaseMask;
   XSelectInput((*xwin)->dsp, (*xwin)->win, eventMask);
 
-  (*xwin)->keys->Q = XKeysymToKeycode((*xwin)->dsp, XStringToKeysym("Q"));
-  (*xwin)->keys->W= XKeysymToKeycode((*xwin)->dsp, XStringToKeysym("W"));
-  (*xwin)->keys->S = XKeysymToKeycode((*xwin)->dsp, XStringToKeysym("S"));
-
   XMapWindow((*xwin)->dsp, (*xwin)->win);
 
   // wait until window appears
   do { XNextEvent((*xwin)->dsp, (*xwin)->evt); } while ((*xwin)->evt->type != MapNotify);
+  
+  // Now create the ximage and display it
+  (*xwin)->ximage = XCreateImage((*xwin)->dsp, (*xwin)->visual, 24, ZPixmap, 0, 
+                                (char *)pixmap, (unsigned int)width, 
+                                (unsigned int)height, 32, 0);
+  (*xwin)->width = width;
+  (*xwin)->height = height;
+  (*xwin)->depth = depth;
+  (*xwin)->numkeys = 0;
+  update_screen(pixmap, xwin);
+
+  // Initialize variables used for FPS
+  (*xwin)->connectnum = ConnectionNumber((*xwin)->dsp);
+
+  // Shouldn't close immediately
+  (*xwin)->should_close = 0;
 }
 
 void xwindow_del(struct XWin **xwin)
 {
+  XFreeGC((*xwin)->dsp, (*xwin)->gc);
+
   XDestroyWindow((*xwin)->dsp, (*xwin)->win);
   XCloseDisplay((*xwin)->dsp);
 
   free((*xwin)->keys);
   free((*xwin)->evt);
+  free((*xwin)->ximage);
   free(*xwin);
 }

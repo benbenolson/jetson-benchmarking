@@ -34,17 +34,13 @@ struct Threadpool
 };
 
 void *wait_thread(void *t);
-
 void task_create(struct Threadpool *threadpool, 
                  void *(*function)(void *),
                  void *args);
-
 void thread_create(struct Thread **thread,
                    struct Threadpool *threadpool);
-
 void threadpool_create(struct Threadpool *threadpool,
                        int numthreads);
-
 void threadpool_end(struct Threadpool *threadpool);
 
 #endif

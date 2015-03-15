@@ -6,6 +6,7 @@ void *wait_thread(void *t)
   struct Threadpool *threadpool = thread->threadpool;
   struct Task *task;
   struct timespec timer;
+  void *retval;
   
   while(!(threadpool->shutdown) || (threadpool->pending != 0)) {
     // Wait on a task to appear
@@ -29,9 +30,13 @@ void *wait_thread(void *t)
     pthread_mutex_unlock(threadpool->tasklock);
     
     // Run the program
-    *(task->function)(task->args);
+    retval = task->function(task->args);
+
+    // Clean up the task
+    free(task->lock);
+    free(task);
   }
-  return NULL;
+  return retval;
 }
 
 void task_create(struct Threadpool *threadpool, void *(*function)(void *), void *args)
@@ -124,9 +129,18 @@ void threadpool_end(struct Threadpool *threadpool)
   thread = threadpool->threads;
   for(int i = 0; i < NUMTHREADS; ++i) {
     pthread_join(*((*thread)->tid), NULL);
+    free((*thread)->tid);
+    free((*thread)->lock);
+    free((*thread)->ready);
+    free(*thread);
     ++thread;
   }
   pthread_mutex_unlock(threadpool->threadlock);
 
-
+  // Clean up
+  free(threadpool->tasklock);
+  free(threadpool->threadlock);
+  free(threadpool->cond);
+  free(threadpool->tasks);
+  free(threadpool->threads);
 }

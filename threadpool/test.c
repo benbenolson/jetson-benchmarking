@@ -106,4 +106,7 @@ int main()
   task_create(&threadpool, &testfunc, args);
   task_create(&threadpool, &testfunc, args);
   threadpool_end(&threadpool);
+  free(args);
+  free(args2);
+  free(args3);
 }

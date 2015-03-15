@@ -33,10 +33,11 @@ void *queue_pop(struct Queue **queue)
 {
   void *retval = (*queue)->data;
   
+
   if((*queue)->next) {
-    (*queue)->data = NULL;
-    *queue = (*queue)->next;
-    (*queue)->prev = NULL;
+    struct Queue *next = (*queue)->next;
+    free(*queue);
+    *queue = next;
   } else {
     (*queue)->data = NULL;
     (*queue)->next = NULL;
@@ -46,6 +47,8 @@ void *queue_pop(struct Queue **queue)
     fprintf(stderr, "I'm about to return a NULL pointer. Why?\n");
     exit(1);
   }
+
+
   return retval;
 }
 

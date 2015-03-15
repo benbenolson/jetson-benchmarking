@@ -2,6 +2,7 @@
 #define TIMING_H
 
 #include <stdio.h>
+#include <time.h>
 #include <sys/time.h>
 
 #define timing(a) gettimeofday(&before, NULL); a; gettimeofday(&after, NULL); timedifference(&after, &before);
