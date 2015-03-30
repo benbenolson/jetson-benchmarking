@@ -22,22 +22,17 @@ void windows(FILE *file, int *width, int *height, int *depth, int *compress, int
   // Get the width and height of the image
   fread(width, 4, 1, file);
   fread(height, 4, 1, file);
-  printf("Width: %d\n", *width);
-  printf("Height: %d\n", *height);
 
   fseek(file, 2, SEEK_CUR);
 
   // Get the bit depth of the image
   fread(depth, 2, 1, file);
-  printf("Bit depth: %d\n", *depth);
 
   // Compression type
   fread(compress, 4, 1, file);
-  printf("Compression type: %d\n", *compress);
 
   // Image size
   fread(size, 4, 1, file);
-  printf("Image size: %d\n", *size);
 
   // Skip the PPM
   fseek(file, 16, SEEK_CUR);
@@ -48,14 +43,11 @@ void os2(FILE *file, int *width, int *height, int *depth)
   // Get the width and height of the image
   fread(width, 2, 1, file);
   fread(height, 2, 1, file);
-  printf("Width: %d\n", *width);
-  printf("Height: %d\n", *height);
 
   fseek(file, 2, SEEK_CUR);
 
   // Get the bit depth of the image
   fread(depth, 2, 1, file);
-  printf("Bit depth: %d\n", *depth);
 }
 
 /*********************************
@@ -71,10 +63,8 @@ void read_header(FILE *file, int *type, int *width, int *height, int *depth, int
 
   // Now read in the OS-specific header
   if(*type == 40) {
-    printf("Reading in a Windows NT 3.1 or later BMP image.\n");
     windows(file, width, height, depth, compress, size);
   } else if(*type == 12) {
-    printf("Reading in an OS/2 BMP image.\n");
     os2(file, width, height, depth);
   } else if((*type == 52) || (*type == 56)) {
     fprintf(stderr, "This is a crazy kind of BMP file only output by Adobe Photoshop. Abort.\n");

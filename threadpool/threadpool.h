@@ -25,6 +25,7 @@ struct Threadpool
 {
   int size;
   int shutdown;
+  int sync;
   int pending;
   pthread_mutex_t *tasklock;
   pthread_mutex_t *threadlock;
@@ -42,5 +43,6 @@ void thread_create(struct Thread **thread,
 void threadpool_create(struct Threadpool *threadpool,
                        int numthreads);
 void threadpool_end(struct Threadpool *threadpool);
+void threadpool_sync(struct Threadpool *threadpool);
 
 #endif

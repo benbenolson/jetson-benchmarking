@@ -52,39 +52,33 @@ void *gamma_subset(void *args)
   return NULL;
 }
 
-void apply_gamma(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, float gam)
+void *apply_gamma(void *args)
 {
+  int numthreads = 4;
+  struct Gamargs *oldargs = args;
+  struct Gamargs *newargs;
   pthread_t tid;
-  struct thread_arguments args;
-  args.width = width;
-  args.height = height / 3;
-  args.depth = depth;
-  args.gam = gam;
-  args.pixmap = pixmap;
-  args.pixmapmod = pixmapmod;
-  pthread_create(&tid, NULL, gamma_subset, &args);
+  int *tids = malloc(sizeof(tid) * numthreads);
+  
+  for(int i = 0; i < numthreads; ++i) {
+    newargs = malloc(sizeof(struct Gamargs));
+    newargs.width = oldargs->width;
+    newargs.height = oldargs->height / 3;
+    newargs.depth = oldargs->depth;
+    newargs.gam = oldargs->gam;
+    newargs.pixmap = oldargs->pixmap;
+    newargs.pixmapmod = oldargs->pixmapmod;
+    pthread_create(&tid, NULL, gamma_subset, &newargs);
+    *tids = tid;
+    ++tids;
+  }
 
-  pthread_t tid2;
-  struct thread_arguments args2;
-  args2.width = width;
-  args2.height = height / 3;
-  args2.depth = depth;
-  args2.gam = gam;
-  args2.pixmap = pixmap + (4 * width * (height / 3));
-  args2.pixmapmod = pixmapmod + (4 * width * (height / 3));
-  pthread_create(&tid2, NULL, gamma_subset, &args2);
+  for(int i = 0; i < numthreads; ++i) {
+    --tids;
+  }
 
-  pthread_t tid3;
-  struct thread_arguments args3;
-  args3.width = width;
-  args3.height = height / 3;
-  args3.depth = depth;
-  args3.gam = gam;
-  args3.pixmap = pixmap + 2 * (4 * width * (height / 3));
-  args3.pixmapmod = pixmapmod + 2 * (4 * width * (height / 3));
-  pthread_create(&tid3, NULL, gamma_subset, &args3);
-
-  pthread_join(tid, NULL);
-  pthread_join(tid2, NULL);
-  pthread_join(tid3, NULL);
+  for(int i = 0; i < numthreads; ++i) {
+    pthread_join(*tids, NULL);
+    ++tids;
+  }
 }

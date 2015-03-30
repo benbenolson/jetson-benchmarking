@@ -97,7 +97,6 @@ void threadpool_create(struct Threadpool *threadpool, int numthreads)
   NUMTHREADS = numthreads;
 
   //Initialize the threadpool
-  threadpool->size = 0;
   threadpool->shutdown = 0;
   threadpool->pending = 0;
   threadpool->tasklock = malloc(sizeof(pthread_mutex_t));
@@ -143,4 +142,18 @@ void threadpool_end(struct Threadpool *threadpool)
   free(threadpool->cond);
   free(threadpool->tasks);
   free(threadpool->threads);
+}
+
+void threadpool_sync(struct Threadpool *threadpool)
+{
+  struct Thread **thread;
+  
+  pthread_mutex_lock(threadpool->threadlock);
+  threadpool->sync = 1;
+  thread = threadpool->threads;
+  for(int i = 0; i < NUMTHREADS; ++i) {
+    pthread_join(*((*thread)->tid), NULL);
+    ++thread;
+  }
+  pthread_mutex_unlock(threadpool->threadlock);
 }

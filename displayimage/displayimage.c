@@ -14,6 +14,7 @@ void change_args(int id, void *args, struct XWin **xwin)
 
 void flush_input(struct XWin **xwin)
 {
+  XFlush((*xwin)->dsp);
   while(XPending((*xwin)->dsp)) {
     XNextEvent((*xwin)->dsp, (*xwin)->evt);
   }
@@ -23,9 +24,10 @@ int input_ready(struct XWin **xwin)
 {
   FD_ZERO(&((*xwin)->input_fd));
   FD_SET((*xwin)->connectnum, &((*xwin)->input_fd));
-  (*xwin)->tv.tv_usec = 60000;
+  (*xwin)->tv.tv_usec = 100000;
   (*xwin)->tv.tv_sec = 0;
   if(select((*xwin)->connectnum + 1, &((*xwin)->input_fd), 0, 0, &((*xwin)->tv))) {
+    printf("Got me some input\n");
     return 1;
   } else {
     return 0;
