@@ -2,7 +2,7 @@
 
 /*********************************
 *         INVERT_COLORS          *
-*********************************/
+*********************************
 void invert_colors(unsigned char *pixmap, int width, int height, int depth)
 {
   unsigned char *beg = pixmap;
@@ -19,6 +19,7 @@ void invert_colors(unsigned char *pixmap, int width, int height, int depth)
   }
   pixmap = beg;
 }
+*/
 
 /*********************************
 *         GAMMA                  *
@@ -26,7 +27,7 @@ void invert_colors(unsigned char *pixmap, int width, int height, int depth)
 
 void *gamma_subset(void *args)
 {
-  struct thread_arguments *pic = (struct thread_arguments *)args;
+  struct Gamargs *pic = (struct Gamargs *)args;
   unsigned char *beg = pic->pixmap;
   unsigned char tmp;
   if(pic->depth == 24) {
@@ -34,9 +35,10 @@ void *gamma_subset(void *args)
       for(int n = 0; n < (pic->width); ++n) {
         for(int x = 0; x < 3; ++x) {
           tmp = pow((float)(*(pic->pixmap)) / 255, (float)(1 / pic->gam)) * 255;
-          if(tmp < 5) {
+          if((tmp > *(pic->pixmapmod)) && (pic->gam < pic->prevgam) && (pic->gam < 1.0)) { 
             tmp = 0;
-          } else if (tmp > 250) {
+          }
+          if((tmp < *(pic->pixmapmod)) && (pic->gam > pic->prevgam) && (pic->gam > 1.0)) {
             tmp = 255;
           }
           *(pic->pixmapmod) = tmp;  
@@ -57,22 +59,23 @@ void *apply_gamma(void *args)
   int numthreads = 4;
   struct Gamargs *oldargs = args;
   struct Gamargs *newargs;
-  pthread_t tid;
-  int *tids = malloc(sizeof(tid) * numthreads);
+  pthread_t *tids = malloc(sizeof(pthread_t) * numthreads);
   
   for(int i = 0; i < numthreads; ++i) {
     newargs = malloc(sizeof(struct Gamargs));
-    newargs.width = oldargs->width;
-    newargs.height = oldargs->height / 3;
-    newargs.depth = oldargs->depth;
-    newargs.gam = oldargs->gam;
-    newargs.pixmap = oldargs->pixmap;
-    newargs.pixmapmod = oldargs->pixmapmod;
-    pthread_create(&tid, NULL, gamma_subset, &newargs);
-    *tids = tid;
+    newargs->width = oldargs->width;
+    newargs->height = oldargs->height / numthreads;
+    newargs->depth = oldargs->depth;
+    newargs->gam = oldargs->gam;
+    newargs->prevgam = oldargs->prevgam;
+    newargs->pixmap = oldargs->pixmap + (i * (4 * oldargs->width *
+                                        ((oldargs->height) / numthreads)));
+    newargs->pixmapmod = oldargs->pixmapmod + (i * (4 * oldargs->width *
+                                              ((oldargs->height) / numthreads)));
+    pthread_create(tids, NULL, gamma_subset, newargs);
     ++tids;
   }
-
+  
   for(int i = 0; i < numthreads; ++i) {
     --tids;
   }
@@ -81,4 +84,6 @@ void *apply_gamma(void *args)
     pthread_join(*tids, NULL);
     ++tids;
   }
+
+  return NULL;
 }

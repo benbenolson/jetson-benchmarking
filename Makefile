@@ -1,7 +1,7 @@
 CC=clang
 CFLAGS=-c -Wall -g
 LDFLAGS=-lpthread -lm -lX11
-SOURCES=queue/queue.c threadpool/threadpool.c displayimage/displayimage.c timing/timing.c transform/transform_threadpool.c image.c
+SOURCES=queue/queue.c threadpool/threadpool.c displayimage/displayimage.c timing/timing.c transform/transform_thread.c image.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=bimage
 
