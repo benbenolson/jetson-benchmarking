@@ -1,0 +1,27 @@
+.SUFFIXES: .c .h .o .cu
+
+# Set up the environment
+CC=clang
+CFLAGS=-c -g
+LDFLAGS=-lpthread -lm -lX11
+INCLUDE=
+
+# Define the deps
+SOURCES=queue/queue.c displayimage/displayimage.c timing/timing.c transform/transform_thread.c image.c
+OBJECTS=$(SOURCES:.c=.o)
+
+# Ready
+EXECUTABLE=bimage
+
+.PHONY: all clean
+
+all: $(OBJECTS) $(EXECUTABLE)
+
+clean:
+	rm -rf $(OBJECTS) $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJECTS) $(CUDAOBJECTS)
+	$(CC) $(LDFLAGS) $(INCLUDE) $(OBJECTS) -g -o $@
+
+.c.o:
+	$(CC) $< -o $@ $(INCLUDE) $(CFLAGS)

@@ -2,9 +2,12 @@
 #include <stdio.h>
 #include "bmp/bmp.h"
 #include "displayimage/displayimage.h"
-#include "transform/transform_thread.h"
+#include "transform/transform_cuda.h"
 #include "timing/timing.h"
 
+/******************************
+*        NONINTERACTIVE       *
+******************************/
 void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin)
 {
   float gamma = 1;
@@ -60,6 +63,9 @@ void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwi
   }
 }
 
+/******************************
+*        INTERACTIVE          *
+******************************/
 void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin)
 {
   float gamma = 1;
