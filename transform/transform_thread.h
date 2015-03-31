@@ -2,6 +2,8 @@
 #define TRANSFORM_THREAD_H
 
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <pthread.h>
 
 struct Gamargs
