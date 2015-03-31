@@ -1,11 +1,9 @@
-#ifndef TRANSFORM_THREADPOOL_H
-#define TRANSFORM_THREADPOOL_H
+#ifndef TRANSFORM_CUDA_H
+#define TRANSFORM_CUDA_H
 
 #include <math.h>
-#include <pthread.h>
-#include "../threadpool/threadpool.h"
-
-struct Threadpool *threadpool;
+#include <stdio.h>
+#include <cuda_runtime.h>
 
 struct Gamargs
 {
@@ -15,7 +13,7 @@ struct Gamargs
 };
 
 void invert_colors(unsigned char *pixmap, int width, int height, int depth);
-void *gamma_subset(void *args);
+__global__ void gamma_subset(void *args);
 void *apply_gamma(void *args);
 
 #endif

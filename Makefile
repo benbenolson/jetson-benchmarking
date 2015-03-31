@@ -1,20 +1,34 @@
+.SUFFIXES: .c .h .o .cu
+
+# Set up the environment
 CC=clang
-CFLAGS=-c -Wall -g
-LDFLAGS=-lpthread -lm -lX11
-SOURCES=queue/queue.c threadpool/threadpool.c displayimage/displayimage.c timing/timing.c transform/transform_thread.c image.c
+CUDACC=nvcc
+CFLAGS=-c -g
+CUDACFLAGS=-c -arch sm_20
+LDFLAGS=-lpthread -lm -lX11 -L/usr/local/cuda/lib -lcuda -lcudart
+INCLUDE=-I/usr/local/cuda-6.5/include
+
+# Define the deps
+SOURCES=queue/queue.c displayimage/displayimage.c timing/timing.c image.c
+CUDASOURCES=transform/transform_cuda.cu
 OBJECTS=$(SOURCES:.c=.o)
+CUDAOBJECTS=$(CUDASOURCES:.cu=.o)
+
+# Ready
 EXECUTABLE=bimage
 
 .PHONY: all clean
 
-all: $(OBJECTS) $(EXECUTABLE)
+all: $(CUDAOBJECTS) $(OBJECTS) $(EXECUTABLE)
 
 clean:
-	rm -rf $(OBJECTS) $(EXECUTABLE)
+	rm -rf $(OBJECTS) $(CUDAOBJECTS) $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -g -o $@
+$(EXECUTABLE): $(OBJECTS) $(CUDAOBJECTS)
+	$(CC) $(LDFLAGS) $(INCLUDE) $(OBJECTS) $(CUDAOBJECTS) -g -o $@
 
 .c.o:
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $< -o $@ $(INCLUDE) $(CFLAGS)
 
+.cu.o:
+	$(CUDACC) $(CUDACFLAGS) $< -o $@

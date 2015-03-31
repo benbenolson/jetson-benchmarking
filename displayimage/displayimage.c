@@ -27,7 +27,6 @@ int input_ready(struct XWin **xwin)
   (*xwin)->tv.tv_usec = 100000;
   (*xwin)->tv.tv_sec = 0;
   if(select((*xwin)->connectnum + 1, &((*xwin)->input_fd), 0, 0, &((*xwin)->tv))) {
-    printf("Got me some input\n");
     return 1;
   } else {
     return 0;
