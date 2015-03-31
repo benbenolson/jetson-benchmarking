@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "bmp/bmp.h"
 #include "displayimage/displayimage.h"
-#include "transform/transform_thread.h"
+#include "transform/transform_cuda.h"
 #include "timing/timing.h"
 
 void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin)
