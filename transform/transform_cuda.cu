@@ -36,14 +36,16 @@ void gamma_subset(void *args, void *d_pixmap, void *d_pixmapmod)
   unsigned char tmp;
 
   if(pic->depth == 24) {
-    tmp = pow((float)(*(pixmap + i)) / 255, (float)(1 / pic->gam)) * 255;
-    if((tmp > *(pixmapmod + i)) && (pic->gam < pic->prevgam) && (pic->gam < 1.0)) {
-      tmp = 0;
+    if(i < (pic->width * pic->height * 4 * sizeof(unsigned char))) {
+      tmp = pow((float)(*(pixmap + i)) / 255, (float)(1 / pic->gam)) * 255;
+      if((tmp > *(pixmapmod + i)) && (pic->gam < pic->prevgam) && (pic->gam < 1.0)) {
+        tmp = 0;
+      }
+      if((tmp < *(pixmapmod + i)) && (pic->gam > pic->prevgam) && (pic->gam > 1.0)) {
+        tmp = 255;
+      }
+      *(pixmapmod + i) = tmp;
     }
-    if((tmp < *(pixmapmod + i)) && (pic->gam > pic->prevgam) && (pic->gam > 1.0)) {
-      tmp = 255;
-    }
-    *(pixmapmod + i) = tmp;
   }
 }
 
@@ -65,7 +67,6 @@ extern "C"
     newargs->pixmapmod = oldargs->pixmapmod;
     
     if(newargs->depth == 24) {
-      printf("Setting numpixels\n");
       numpixels = (newargs->width) * (newargs->height) * 4;
     }
 
@@ -76,8 +77,6 @@ extern "C"
     cudaMemcpy(d_newargs, newargs, sizeof(struct Gamargs), cudaMemcpyHostToDevice);
     cudaMemcpy(d_pixmap, newargs->pixmap, sizeof(unsigned char) * 4 * newargs->height * newargs->width, cudaMemcpyHostToDevice);
     cudaMemcpy(d_pixmapmod, newargs->pixmapmod, sizeof(unsigned char) * 4 * newargs->height * newargs->width, cudaMemcpyHostToDevice);
-    printf("%d\n", numpixels);
-    printf("spawning %d blocks\n", (numpixels + 255) / 256);
     gamma_subset<<<(numpixels + 255) / 256, 256>>>((void *)d_newargs, (void *)d_pixmap, (void *)d_pixmapmod);
 
     // Pass the data back

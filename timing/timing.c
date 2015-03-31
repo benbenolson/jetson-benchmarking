@@ -13,5 +13,5 @@ void timedifference(struct timeval *x, struct timeval *y)
     y->tv_sec -= nsec;
   }
 
-  printf("The operation took %ld seconds and %ld microseconds.\n", x->tv_sec - y->tv_sec, x->tv_usec - y->tv_usec);
+  printf("%ld.%06ld\n", x->tv_sec - y->tv_sec, x->tv_usec - y->tv_usec);
 }
