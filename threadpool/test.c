@@ -33,6 +33,7 @@ int main()
   task_create(&threadpool, &testfunc, args);
   task_create(&threadpool, &testfunc, args);
   task_create(&threadpool, &testfunc, args);
+//  threadpool_sync(&threadpool);
   threadpool_sync(&threadpool);
   printf("I'm all synced up.\n");
   free(args);

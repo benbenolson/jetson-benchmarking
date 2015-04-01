@@ -1,6 +1,6 @@
 CC=clang
 CFLAGS=-c -Wall -g
-LDFLAGS=-lpthread -lm -lX11
+LDFLAGS=-lpthread
 SOURCES=../queue/queue.c threadpool.c test.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=test

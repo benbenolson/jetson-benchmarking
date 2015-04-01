@@ -8,7 +8,6 @@ int NUMTHREADS;
 
 struct Task
 {
-  pthread_mutex_t *lock;
   void *args;
   void *(*function)(void *);
 };
@@ -24,14 +23,23 @@ struct Thread
 struct Threadpool
 {
   int size;
+  pthread_mutex_t *sizelock;
+
   int shutdown;
   int sync;
+
   int pending;
-  pthread_mutex_t *tasklock;
-  pthread_mutex_t *threadlock;
-  pthread_cond_t *cond;
+  pthread_mutex_t *pendinglock;
+
+  int waiting;
+  pthread_mutex_t *waitinglock;
+
   struct Queue *tasks;
+  pthread_mutex_t *tasklock;
+  pthread_cond_t *cond;
+
   struct Thread **threads;
+  pthread_mutex_t *threadlock;
 };
 
 void *wait_thread(void *t);
