@@ -7,7 +7,11 @@ struct Args
 
 void *testfunc(void *args)
 {
-  printf("The argument is %d\n", (*(int *)args));
+  int test = 0;
+  for(int i = 0; i < 100000; ++i) {
+    ++test;
+  }
+  printf("Finished a task.\n");
   return NULL;
 }
 
@@ -23,19 +27,11 @@ int main()
   args->number = 1;
   args2->number = 2;
   args3->number = 3;
-  threadpool_create(&threadpool, 4);
-  task_create(&threadpool, &testfunc, args);
-  task_create(&threadpool, &testfunc, args);
-  task_create(&threadpool, &testfunc, args);
-  task_create(&threadpool, &testfunc, args);
-  task_create(&threadpool, &testfunc, args);
-  task_create(&threadpool, &testfunc, args);
-  task_create(&threadpool, &testfunc, args);
-  task_create(&threadpool, &testfunc, args);
-  task_create(&threadpool, &testfunc, args);
-//  threadpool_sync(&threadpool);
+  threadpool_create(&threadpool, 20000);
+  for(int i = 0; i < 600; ++i) {
+    task_create(&threadpool, &testfunc, args);
+  }
   threadpool_sync(&threadpool);
-  printf("I'm all synced up.\n");
   free(args);
   free(args2);
   free(args3);
