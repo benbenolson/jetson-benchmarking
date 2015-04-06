@@ -2,13 +2,28 @@
 #include <stdio.h>
 #include "bmp/bmp.h"
 #include "displayimage/displayimage.h"
-#include "transform/transform_cuda.h"
+#ifdef TRANSFORM_THREAD
+  #include "transform/transform_thread.h"
+#endif
+#ifdef TRANSFORM_THREADPOOL
+  #include "transform/transform_threadpool.h"
+#endif
+#ifdef TRANSFORM_CUDA
+  #include "transform/transform_cuda.h"
+#endif
+#ifdef TRANSFORM_NOTHREAD
+  #include "transform/transform_nothread.h"
+#endif
 #include "timing/timing.h"
 
 /******************************
 *        NONINTERACTIVE       *
 ******************************/
+#if defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL)
+void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin, int numthreads)
+#else
 void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin)
+#endif
 {
   float gamma = 1;
   int w_key, s_key;
@@ -23,6 +38,9 @@ void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwi
   wargs->depth = (*xwin)->depth;
   wargs->prevgam = gamma;
   wargs->gam = gamma;
+#if defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
+  wargs->numthreads = numthreads;
+#endif
   w_key = create_key("W", &apply_gamma, (void *)wargs, xwin);
   
   // Handle the S key
@@ -34,16 +52,19 @@ void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwi
   sargs->depth = (*xwin)->depth;
   sargs->prevgam = gamma;
   sargs->gam = gamma;
+#if defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
+  sargs->numthreads = numthreads;
+#endif
   s_key = create_key("S", &apply_gamma, (void *)sargs, xwin);
   
   pressed_key = w_key;
-  while(1) {
+  for(int i = 0; i < (60 * 20); ++i) {
     if(pressed_key == w_key) {
       gamma += 0.1;
       wargs->prevgam = gamma - 0.1;
       wargs->gam = gamma;
       change_args(w_key, wargs, xwin);
-      timing(handle_key(w_key, xwin));
+      handle_key(w_key, xwin);
     } else if(pressed_key == s_key) {
       if(gamma >= 0) {
         gamma -= 0.1;
@@ -51,7 +72,7 @@ void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwi
       sargs->prevgam = gamma + 0.1;
       sargs->gam = gamma;
       change_args(s_key, sargs, xwin);
-      timing(handle_key(s_key, xwin));
+      handle_key(s_key, xwin);
     }
     flush_input(xwin);
     update_screen(pixmapmod, xwin);
@@ -114,8 +135,6 @@ void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **x
       }
       flush_input(xwin);
       update_screen(pixmapmod, xwin);
-    } else {
-//      update_screen(pixmapmod, xwin);
     }
   }
 }
@@ -125,6 +144,7 @@ void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **x
 *********************************/
 int main(int argc, char **argv)
 {
+  int numthreads;
   int size = 0;
   int width = 0;
   int height = 0;
@@ -133,10 +153,18 @@ int main(int argc, char **argv)
   int type = 0;
   unsigned char *pixmap, *pixmapmod;
 
+#if defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
+  if(argc != 3) {
+    fprintf(stderr, "Usage: ./image [filename] [numthreads]\n");
+    exit(1);
+  }
+  numthreads = atoi(argv[2]);
+#else
   if(argc != 2) {
     fprintf(stderr, "Usage: ./image [filename]\n");
     exit(1);
   }
+#endif
 
   // Open the file
   FILE *file = fopen(argv[1], "r");
@@ -152,7 +180,11 @@ int main(int argc, char **argv)
   // Finally, display the image.
   struct XWin **xwin = calloc(sizeof(struct XWin *), 1);
   xwindow_init(pixmap, pixmapmod, width, height, depth, xwin);
-  fps_test(pixmap, pixmapmod, xwin);
+#if defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL)
+  timing(fps_test(pixmap, pixmapmod, xwin, numthreads));
+#else
+  timing(fps_test(pixmap, pixmapmod, xwin));
+#endif
 
   // Clean up
   xwindow_del(xwin);

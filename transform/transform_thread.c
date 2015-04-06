@@ -56,9 +56,9 @@ void *gamma_subset(void *args)
 
 void *apply_gamma(void *args)
 {
-  int numthreads = 4;
   struct Gamargs *oldargs = args;
   struct Gamargs *newargs;
+  int numthreads = oldargs->numthreads;
   pthread_t *tids = malloc(sizeof(pthread_t) * numthreads);
   
   for(int i = 0; i < numthreads; ++i) {

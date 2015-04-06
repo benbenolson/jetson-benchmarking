@@ -55,9 +55,9 @@ void *gamma_subset(void *args)
 
 void *apply_gamma(void *args)
 {
-  int numthreads = 10;
   struct Gamargs *oldargs = args;
   struct Gamargs *newargs;
+  int numthreads = oldargs->numthreads;
 
   // If you haven't already, create the threadpool
   if(!threadpool) {
@@ -79,7 +79,7 @@ void *apply_gamma(void *args)
     task_create(threadpool, &gamma_subset, newargs);
   }
 
-//  threadpool_sync(threadpool);
+  threadpool_sync(threadpool);
   
   return NULL;
 }

@@ -32,7 +32,6 @@ void *wait_thread(void *t)
     free(task);
     pthread_mutex_unlock(threadpool->tasklock);
   }
-  printf("Thread dying %d\n", threadpool->shutdown);
   return retval;
 }
 
@@ -136,6 +135,7 @@ void threadpool_sync(struct Threadpool *threadpool)
   while(1) {
     pthread_mutex_lock(threadpool->tasklock);
     if((threadpool->pending == 0) && (threadpool->waiting == NUMTHREADS)) {
+      pthread_mutex_unlock(threadpool->tasklock);
       return;
     }
     pthread_mutex_unlock(threadpool->tasklock);

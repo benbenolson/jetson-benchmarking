@@ -2,7 +2,7 @@
 
 # Set up the environment
 CC=clang
-CFLAGS=-c -g
+CFLAGS=-c -DTRANSFORM_THREAD
 LDFLAGS=-lpthread -lm -lX11
 INCLUDE=
 
@@ -11,7 +11,7 @@ SOURCES=queue/queue.c displayimage/displayimage.c timing/timing.c transform/tran
 OBJECTS=$(SOURCES:.c=.o)
 
 # Ready
-EXECUTABLE=bimage
+EXECUTABLE=bimage_thread
 
 .PHONY: all clean
 
@@ -21,7 +21,8 @@ clean:
 	rm -rf $(OBJECTS) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS) $(CUDAOBJECTS)
-	$(CC) $(LDFLAGS) $(INCLUDE) $(OBJECTS) -g -o $@
+	$(CC) $(LDFLAGS) $(INCLUDE) $(OBJECTS) -o $@
+	rm -rf $(OBJECTS)
 
 .c.o:
 	$(CC) $< -o $@ $(INCLUDE) $(CFLAGS)

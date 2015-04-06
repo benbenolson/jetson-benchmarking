@@ -11,7 +11,7 @@ void *testfunc(void *args)
   for(int i = 0; i < 100000; ++i) {
     ++test;
   }
-  printf("Finished a task.\n");
+  printf("Finished.\n");
   return NULL;
 }
 
@@ -27,8 +27,12 @@ int main()
   args->number = 1;
   args2->number = 2;
   args3->number = 3;
-  threadpool_create(&threadpool, 20000);
-  for(int i = 0; i < 600; ++i) {
+  threadpool_create(&threadpool, 10);
+  for(int i = 0; i < 2; ++i) {
+    task_create(&threadpool, &testfunc, args);
+  }
+  threadpool_sync(&threadpool);
+  for(int i = 0; i < 2; ++i) {
     task_create(&threadpool, &testfunc, args);
   }
   threadpool_sync(&threadpool);

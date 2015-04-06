@@ -9,6 +9,7 @@ struct Threadpool *threadpool;
 
 struct Gamargs
 {
+  int numthreads;
   int width, height, depth;
   float gam, prevgam;
   unsigned char *pixmap, *pixmapmod;

@@ -2,49 +2,17 @@
 #define TRANSFORM_NOTHREAD_H
 
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-/*********************************
-*         INVERT_COLORS          *
-*********************************/
-void invert_colors(unsigned char *pixmap, int width, int height, int depth)
+struct Gamargs
 {
-  unsigned char *beg = pixmap;
-  if(depth == 24) {
-    for(int i = 0; i < (height); ++i) {
-      for(int n = 0; n < (width); ++n) {
-        for(int x = 0; x < 3; ++x) {
-          *pixmap = 255 - (*pixmap);
-          ++pixmap;
-        }
-        ++pixmap;
-      }
-    }
-  }
-  pixmap = beg;
-}
+  int width, height, depth;
+  float gam, prevgam;
+  unsigned char *pixmap, *pixmapmod;
+};
 
-/*********************************
-*         GAMMA                  *
-*********************************/
-void apply_gamma(unsigned char *pixmap, int width, int height, int depth, float gam)
-{
-  unsigned char *beg = pixmap;
-  unsigned char tmp;
-  if(depth == 24) {
-    for(int i = 0; i < (height); ++i) {
-      for(int n = 0; n < (width); ++n) {
-        for(int x = 0; x < 3; ++x) {
-          tmp = pow((float)(*pixmap) / 255, (float)(1 / gam)) * 255;
-          if((tmp > 10) && (tmp < 245)) {
-            *pixmap = tmp;
-          }
-          ++pixmap;
-        }
-        ++pixmap;
-      }
-    }
-  }
-  pixmap = beg;
-}
+void invert_colors(unsigned char *pixmap, int width, int height, int depth);
+void *apply_gamma(void *args);
 
 #endif

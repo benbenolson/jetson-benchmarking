@@ -3,7 +3,7 @@
 # Set up the environment
 CC=clang
 CUDACC=nvcc
-CFLAGS=-c -g
+CFLAGS=-c -DTRANSFORM_CUDA
 CUDACFLAGS=-c -arch sm_32
 LDFLAGS=-lpthread -lm -lX11 -L/usr/local/cuda/lib -lcuda -lcudart
 INCLUDE=-I/usr/local/cuda-6.5/include
@@ -15,7 +15,7 @@ OBJECTS=$(SOURCES:.c=.o)
 CUDAOBJECTS=$(CUDASOURCES:.cu=.o)
 
 # Ready
-EXECUTABLE=bimage
+EXECUTABLE=bimage_cuda
 
 .PHONY: all clean
 
@@ -25,7 +25,8 @@ clean:
 	rm -rf $(OBJECTS) $(CUDAOBJECTS) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS) $(CUDAOBJECTS)
-	$(CC) $(LDFLAGS) $(INCLUDE) $(OBJECTS) $(CUDAOBJECTS) -g -o $@
+	$(CC) $(LDFLAGS) $(INCLUDE) $(OBJECTS) $(CUDAOBJECTS) -o $@
+	rm -rf $(OBJECTS) $(CUDAOBJECTS)
 
 .c.o:
 	$(CC) $< -o $@ $(INCLUDE) $(CFLAGS)
