@@ -27,6 +27,7 @@ foreach my $exec (@execs) {
       } else {
         $output = `./$exec $image $numthread`;
       }
+      $output = 1200 / $output;
       print $fh "\"$exec\",\"$numthread\",\"$output\"\n";
     }
   }
