@@ -26,64 +26,114 @@ void invert_colors(unsigned char *pixmap, int width, int height, int depth)
 *         GAMMA                  *
 *********************************/
 
+// Function for each thread to run
+void *cpu_gamma_subset(void *args)
+{
+  struct Cpuargs *pic = (struct Cpuargs *)args;
+  unsigned char *beg = pic->pixmap;
+  unsigned char tmp;
+  for(int i = 0; i < pic->size; ++i) {
+    tmp = pow((float)(*(pic->pixmap)) / 255, (float)(1 / pic->gam)) * 255;
+    if((tmp > *(pic->pixmapmod)) && (pic->gam < pic->prevgam) && (pic->gam < 1.0)) {
+      tmp = 0;
+    }
+    if((tmp < *(pic->pixmapmod)) && (pic->gam > pic->prevgam) && (pic->gam > 1.0)) {
+      tmp = 255;
+    }
+    *(pic->pixmapmod) = tmp;
+    ++(pic->pixmap);
+    ++(pic->pixmapmod);
+  }
+  return NULL;
+}
+
+
+//cuda kernel
 __global__
-void gamma_subset(void *args, void *d_pixmap, void *d_pixmapmod)
+void gpu_gamma_subset(void *args)
 {
   int i = blockDim.x * blockIdx.x + threadIdx.x;
-  struct Gamargs *pic = (struct Gamargs *)args;
-  unsigned char *pixmap = (unsigned char *)d_pixmap;
-  unsigned char *pixmapmod = (unsigned char *)d_pixmapmod;
+  struct Gpuargs *pic = (struct Gpuargs *)args;
+  unsigned char *pixmap = (unsigned char *)pic->pixmap;
+  unsigned char *pixmapmod = (unsigned char *)pic->pixmapmod;
   unsigned char tmp;
 
-  if(pic->depth == 24) {
-    if(i < (pic->width * pic->height * 4 * sizeof(unsigned char))) {
-      tmp = pow((float)(*(pixmap + i)) / 255, (float)(1 / pic->gam)) * 255;
-      if((tmp > *(pixmapmod + i)) && (pic->gam < pic->prevgam) && (pic->gam < 1.0)) {
-        tmp = 0;
-      }
-      if((tmp < *(pixmapmod + i)) && (pic->gam > pic->prevgam) && (pic->gam > 1.0)) {
-        tmp = 255;
-      }
-      *(pixmapmod + i) = tmp;
+  if(i < (pic->size)) {
+    tmp = pow((float)(*(pixmap + i)) / 255, (float)(1 / pic->gam)) * 255;
+    if((tmp > *(pixmapmod + i)) && (pic->gam < pic->prevgam) && (pic->gam < 1.0)) {
+      tmp = 0;
     }
+    if((tmp < *(pixmapmod + i)) && (pic->gam > pic->prevgam) && (pic->gam > 1.0)) {
+      tmp = 255;
+    }
+    *(pixmapmod + i) = tmp;
   }
 }
 
 extern "C"
-  void *apply_gamma(void *args)
-  {
-    struct Gamargs *oldargs = (struct Gamargs *)args;
-    struct Gamargs *newargs, *d_newargs;
-    unsigned char *d_pixmap, *d_pixmapmod;
-    int numpixels;
+void *apply_gamma(void *args)
+{
+  struct Gamargs *oldargs = (struct Gamargs *)args;
+  unsigned char *pixmap = oldargs->pixmap;
+  unsigned char *pixmapmod = oldargs->pixmapmod;
 
-    newargs = (struct Gamargs *)malloc(sizeof(struct Gamargs));
-    newargs->width = oldargs->width;
-    newargs->height = oldargs->height;
-    newargs->depth = oldargs->depth;
-    newargs->gam = oldargs->gam;
-    newargs->prevgam = oldargs->prevgam;
-    newargs->pixmap = oldargs->pixmap;
-    newargs->pixmapmod = oldargs->pixmapmod;
-    
-    if(newargs->depth == 24) {
-      numpixels = (newargs->width) * (newargs->height) * 4;
-    }
-
-    // Allocate the memory on the GPU and run the kernel
-    cudaMalloc((void **)(&d_newargs), sizeof(struct Gamargs));
-    cudaMalloc((void **)(&d_pixmap), sizeof(unsigned char) * 4 * newargs->height * newargs->width);
-    cudaMalloc((void **)(&d_pixmapmod), sizeof(unsigned char) * 4 * newargs->height * newargs->width);
-    cudaMemcpy(d_newargs, newargs, sizeof(struct Gamargs), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_pixmap, newargs->pixmap, sizeof(unsigned char) * 4 * newargs->height * newargs->width, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_pixmapmod, newargs->pixmapmod, sizeof(unsigned char) * 4 * newargs->height * newargs->width, cudaMemcpyHostToDevice);
-    gamma_subset<<<(numpixels + 255) / 256, 256>>>((void *)d_newargs, (void *)d_pixmap, (void *)d_pixmapmod);
-
-    // Pass the data back
-    cudaMemcpy(newargs, d_newargs, sizeof(struct Gamargs), cudaMemcpyDeviceToHost);
-    cudaMemcpy(newargs->pixmap, d_pixmap, sizeof(unsigned char) * 4 * newargs->height * newargs->width, cudaMemcpyDeviceToHost);
-    cudaMemcpy(newargs->pixmapmod, d_pixmapmod, sizeof(unsigned char) * 4 * newargs->height * newargs->width, cudaMemcpyDeviceToHost);
-
-    return NULL;
+  // Figure how much of the image the CPU/GPU is doing
+  int gpusize, cpusize;
+  if(oldargs->depth == 24) {
+    gpusize = oldargs->height * oldargs->width * 4 * oldargs->split;
+    cpusize = (oldargs->height * oldargs->width * 4) - gpusize;
+    printf("The GPU is doing %d bytes.\n", gpusize);
+    printf("The CPU is doing %d bytes.\n", cpusize);
   }
 
+  // Set up data structures for the CPU threads
+  int numthreads = oldargs->numthreads;
+  struct Cpuargs *cpuargs;
+  pthread_t *tids = (pthread_t *)malloc(sizeof(pthread_t) * numthreads);
+
+  // Create all of the threads
+  for(int i = 0; i < numthreads; ++i) {
+    cpuargs = (struct Cpuargs *)malloc(sizeof(struct Cpuargs));
+    cpuargs->size = cpusize / numthreads;
+    cpuargs->depth = oldargs->depth;
+    cpuargs->gam = oldargs->gam;
+    cpuargs->prevgam = oldargs->prevgam;
+    cpuargs->pixmap = oldargs->pixmap + gpusize + (i * (cpuargs->size));
+    cpuargs->pixmapmod = oldargs->pixmapmod + gpusize + (i * (cpuargs->size));
+    pthread_create(tids, NULL, cpu_gamma_subset, cpuargs);
+    ++tids;
+  }
+  for(int i = 0; i < numthreads; ++i) {
+    --tids;
+  }
+  
+  // Set up the GPU data structures
+  struct Gpuargs *gpuargs, *d_gpuargs;
+  gpuargs = (struct Gpuargs *)malloc(sizeof(struct Gpuargs));
+  gpuargs->depth = oldargs->depth;
+  gpuargs->size = gpusize;
+  gpuargs->gam = oldargs->gam;
+  gpuargs->prevgam = oldargs->prevgam;
+
+  // Allocate and move data to the GPU
+  cudaMalloc((void **)(&d_gpuargs), sizeof(struct Gpuargs));
+  cudaMalloc((void **)(&gpuargs->pixmap), sizeof(unsigned char) * gpuargs->size);
+  cudaMalloc((void **)(&gpuargs->pixmapmod), sizeof(unsigned char) * gpuargs->size);
+  cudaMemcpy(d_gpuargs, gpuargs, sizeof(struct Gpuargs), cudaMemcpyHostToDevice);
+  cudaMemcpy(gpuargs->pixmap, pixmap, sizeof(unsigned char) * gpuargs->size, cudaMemcpyHostToDevice);
+  cudaMemcpy(gpuargs->pixmapmod, pixmapmod, sizeof(unsigned char) * gpuargs->size, cudaMemcpyHostToDevice);
+
+  // Run!
+  gpu_gamma_subset<<<(gpuargs->size + (oldargs->threadsperblock -1)) / oldargs->threadsperblock, oldargs->threadsperblock>>>((void *)d_gpuargs);
+
+  // Pass the data back
+  cudaMemcpy(oldargs->pixmapmod, gpuargs->pixmapmod, sizeof(unsigned char) * gpuargs->size, cudaMemcpyDeviceToHost);
+
+  // Sync all of the threads
+  for(int i = 0; i < numthreads; ++i) {
+    pthread_join(*tids, NULL);
+    ++tids;
+  }
+
+  return NULL;
+}

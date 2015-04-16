@@ -4,9 +4,26 @@
 #include <math.h>
 #include <stdio.h>
 #include <cuda_runtime.h>
+#include <pthread.h>
+
+struct Cpuargs
+{
+  int size, depth;
+  float gam, prevgam;
+  unsigned char *pixmap, *pixmapmod;
+};
+
+struct Gpuargs
+{
+  int size, depth;
+  float gam, prevgam;
+  unsigned char *pixmap, *pixmapmod;
+};
 
 struct Gamargs
 {
+  int numthreads, threadsperblock;
+  double split;
   int width, height, depth;
   float gam, prevgam;
   unsigned char *pixmap, *pixmapmod;

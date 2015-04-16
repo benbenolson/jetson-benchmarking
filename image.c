@@ -19,7 +19,9 @@
 /******************************
 *        NONINTERACTIVE       *
 ******************************/
-#if defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL)
+#if defined(TRANSFORM_CUDA)
+void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin, int numthreads, double split, int threadsperblock)
+#elif defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL)
 void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin, int numthreads)
 #else
 void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin)
@@ -38,7 +40,11 @@ void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwi
   wargs->depth = (*xwin)->depth;
   wargs->prevgam = gamma;
   wargs->gam = gamma;
-#if defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
+#if defined(TRANSFORM_CUDA)
+  wargs->numthreads = numthreads;
+  wargs->split = split;
+  wargs->threadsperblock = threadsperblock;
+#elif defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
   wargs->numthreads = numthreads;
 #endif
   w_key = create_key("W", &apply_gamma, (void *)wargs, xwin);
@@ -52,13 +58,17 @@ void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwi
   sargs->depth = (*xwin)->depth;
   sargs->prevgam = gamma;
   sargs->gam = gamma;
-#if defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
+#if defined(TRANSFORM_CUDA)
+  sargs->numthreads = numthreads;
+  sargs->split = split;
+  sargs->threadsperblock = threadsperblock;
+#elif defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
   sargs->numthreads = numthreads;
 #endif
   s_key = create_key("S", &apply_gamma, (void *)sargs, xwin);
   
   pressed_key = w_key;
-  for(int i = 0; i < (60 * 20); ++i) {
+  for(int i = 0; i < (60); ++i) {
     if(pressed_key == w_key) {
       gamma += 0.1;
       wargs->prevgam = gamma - 0.1;
@@ -144,7 +154,6 @@ void event_loop(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **x
 *********************************/
 int main(int argc, char **argv)
 {
-  int numthreads;
   int size = 0;
   int width = 0;
   int height = 0;
@@ -153,11 +162,23 @@ int main(int argc, char **argv)
   int type = 0;
   unsigned char *pixmap, *pixmapmod;
 
-#if defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
+#if defined(TRANSFORM_CUDA)
+  if(argc != 5) {
+    fprintf(stderr, "Usage: ./image [filename] [numthreads] [split] [threadsperblock]\n");
+    exit(1);
+  }
+  int numthreads, threadsperblock;
+  double split;
+  numthreads = atoi(argv[2]);
+  split = atof(argv[3]);
+  threadsperblock = atoi(argv[4]);
+  printf("split is %f\n", split);
+#elif defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
   if(argc != 3) {
     fprintf(stderr, "Usage: ./image [filename] [numthreads]\n");
     exit(1);
   }
+  int numthreads;
   numthreads = atoi(argv[2]);
 #else
   if(argc != 2) {
@@ -180,7 +201,9 @@ int main(int argc, char **argv)
   // Finally, display the image.
   struct XWin **xwin = calloc(sizeof(struct XWin *), 1);
   xwindow_init(pixmap, pixmapmod, width, height, depth, xwin);
-#if defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL)
+#if defined(TRANSFORM_CUDA)
+  timing(fps_test(pixmap, pixmapmod, xwin, numthreads, split, threadsperblock));
+#elif defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL) || defined(TRANSFORM_CUDA)
   timing(fps_test(pixmap, pixmapmod, xwin, numthreads));
 #else
   timing(fps_test(pixmap, pixmapmod, xwin));
