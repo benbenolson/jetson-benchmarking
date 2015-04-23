@@ -172,7 +172,6 @@ int main(int argc, char **argv)
   numthreads = atoi(argv[2]);
   split = atof(argv[3]);
   threadsperblock = atoi(argv[4]);
-  printf("split is %f\n", split);
 #elif defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
   if(argc != 3) {
     fprintf(stderr, "Usage: ./image [filename] [numthreads]\n");

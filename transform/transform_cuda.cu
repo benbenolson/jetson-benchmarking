@@ -3,26 +3,6 @@ extern "C" {
 }
 
 /*********************************
-*         INVERT_COLORS          *
-*********************************/
-void invert_colors(unsigned char *pixmap, int width, int height, int depth)
-{
-  unsigned char *beg = pixmap;
-  if(depth == 24) {
-    for(int i = 0; i < (height); ++i) {
-      for(int n = 0; n < (width); ++n) {
-        for(int x = 0; x < 3; ++x) {
-          *pixmap = 255 - (*pixmap);
-          ++pixmap;
-        }
-        ++pixmap;
-      }
-    }
-  }
-  pixmap = beg;
-}
-
-/*********************************
 *         GAMMA                  *
 *********************************/
 
@@ -30,7 +10,6 @@ void invert_colors(unsigned char *pixmap, int width, int height, int depth)
 void *cpu_gamma_subset(void *args)
 {
   struct Cpuargs *pic = (struct Cpuargs *)args;
-  unsigned char *beg = pic->pixmap;
   unsigned char tmp;
   for(int i = 0; i < pic->size; ++i) {
     tmp = pow((float)(*(pic->pixmap)) / 255, (float)(1 / pic->gam)) * 255;
@@ -82,8 +61,6 @@ void *apply_gamma(void *args)
   if(oldargs->depth == 24) {
     gpusize = oldargs->height * oldargs->width * 4 * oldargs->split;
     cpusize = (oldargs->height * oldargs->width * 4) - gpusize;
-    printf("The GPU is doing %d bytes.\n", gpusize);
-    printf("The CPU is doing %d bytes.\n", cpusize);
   }
 
   // Set up data structures for the CPU threads
