@@ -29,6 +29,9 @@ complete, with a lower number being better. Check in `image.c` to see how many f
 you `pull`ed this repo, it could be either `60` or `1200`). The number of frames, divided by the result that you got,
 will determine your FPS result.
 
+The Perl script `testing.pl` has an example of this, where I vary the different arguments to the application and output
+the results to a CSV. This turns out to be a rather efficient way to run a large set of tests.
+
 ## Purposes
 This program is a custom application, built from scratch, that is intended to benchmark the NVidia Jetson (using
 both the GPU and CPU concurrently, just the CPU, or just the GPU). It provides the user with a convenient interface
@@ -45,3 +48,5 @@ Also, I quickly found out that Xlib came straight from Satan's buttcrack, but af
 ## Closing Thoughts
 The application runs much faster without having to display the image to the screen, so I think there must be
 something wrong with my Xlib code.  Either that, or raw Xlib is just extremely slow regardless.
+To fix this, significant work would be needed, and displayimage.c would have to be replaced with something
+hardware-accelerated, like some OpenGL code. This is something that I will likely add at some point.
