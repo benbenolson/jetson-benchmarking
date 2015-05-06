@@ -17,14 +17,88 @@
 #include "timing/timing.h"
 
 /******************************
+*           NO X11            *
+******************************/
+#if defined(TRANSFORM_CUDA)
+void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, int numthreads, double split, int threadsperblock)
+#elif defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL)
+void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth, int numthreads)
+#else
+void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, int width, int height, int depth)
+#endif
+{
+  float gamma = 1;
+  int up = 0;
+
+  // Set up the arguments for transform function
+  struct Gamargs *wargs = malloc(sizeof(struct Gamargs));
+  wargs->pixmap = pixmap;
+  wargs->pixmapmod = pixmapmod;
+  wargs->width = width;
+  wargs->height = height;
+  wargs->depth = depth;
+  wargs->prevgam = gamma;
+  wargs->gam = gamma;
+#if defined(TRANSFORM_CUDA)
+  wargs->numthreads = numthreads;
+  wargs->split = split;
+  wargs->threadsperblock = threadsperblock;
+#elif defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
+  wargs->numthreads = numthreads;
+#endif
+  
+  // Set up the arguments for transform function
+  struct Gamargs *sargs = malloc(sizeof(struct Gamargs));
+  sargs->pixmap = pixmap;
+  sargs->pixmapmod = pixmapmod;
+  sargs->width = width;
+  sargs->height = height;
+  sargs->depth = depth;
+  sargs->prevgam = gamma;
+  sargs->gam = gamma;
+#if defined(TRANSFORM_CUDA)
+  sargs->numthreads = numthreads;
+  sargs->split = split;
+  sargs->threadsperblock = threadsperblock;
+#elif defined(TRANSFORM_THREAD) || defined (TRANSFORM_THREADPOOL)
+  sargs->numthreads = numthreads;
+#endif
+  
+  for(int i = 0; i < 60; ++i) {
+    if(up == 0) {
+      gamma += 0.1;
+      wargs->prevgam = gamma - 0.1;
+      wargs->gam = gamma;
+      apply_gamma(wargs);
+    } else if(up == 1) {
+      if(gamma >= 0) {
+        gamma -= 0.1;
+      }
+      sargs->prevgam = gamma + 0.1;
+      sargs->gam = gamma;
+      apply_gamma(sargs);
+    }
+    if(up == 0) {
+      ++up;
+    } else {
+      --up;
+    }
+  }
+
+  free(wargs);
+  free(sargs);
+}
+
+
+/******************************
 *        NONINTERACTIVE       *
 ******************************/
 #if defined(TRANSFORM_CUDA)
-void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin, int numthreads, double split, int threadsperblock)
+void fps_test_x11(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin, int numthreads, double split, int threadsperblock)
 #elif defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL)
-void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin, int numthreads)
+void fps_test_x11(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin, int numthreads)
 #else
-void fps_test(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin)
+void fps_test_x11(unsigned char *pixmap, unsigned char *pixmapmod, struct XWin **xwin)
 #endif
 {
   float gamma = 1;
@@ -198,21 +272,21 @@ int main(int argc, char **argv)
   read_pixels(file, pixmap, pixmapmod, width, height, depth);
 
   // Finally, display the image.
-  struct XWin **xwin = calloc(sizeof(struct XWin *), 1);
-  xwindow_init(pixmap, pixmapmod, width, height, depth, xwin);
+  // struct XWin **xwin = calloc(sizeof(struct XWin *), 1);
+  // xwindow_init(pixmap, pixmapmod, width, height, depth, xwin);
 #if defined(TRANSFORM_CUDA)
-  timing(fps_test(pixmap, pixmapmod, xwin, numthreads, split, threadsperblock));
+  timing(fps_test(pixmap, pixmapmod, width, height, depth, numthreads, split, threadsperblock));
 #elif defined(TRANSFORM_THREAD) || defined(TRANSFORM_THREADPOOL) || defined(TRANSFORM_CUDA)
-  timing(fps_test(pixmap, pixmapmod, xwin, numthreads));
+  timing(fps_test(pixmap, pixmapmod, width, height, depth, numthreads));
 #else
-  timing(fps_test(pixmap, pixmapmod, xwin));
+  timing(fps_test(pixmap, pixmapmod, width, height, depth));
 #endif
 
   // Clean up
-  xwindow_del(xwin);
+  //xwindow_del(xwin);
   free(pixmap);
   free(pixmapmod);
-  free(xwin);
+  //free(xwin);
 
   fclose(file);
   return 0;

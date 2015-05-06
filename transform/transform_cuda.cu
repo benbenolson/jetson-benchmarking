@@ -65,23 +65,21 @@ void *apply_gamma(void *args)
 
   // Set up data structures for the CPU threads
   int numthreads = oldargs->numthreads;
-  struct Cpuargs *cpuargs;
+  struct Cpuargs **cpuargs = (struct Cpuargs **)malloc(sizeof(struct Cpuargs *) * numthreads);
   pthread_t *tids = (pthread_t *)malloc(sizeof(pthread_t) * numthreads);
 
   // Create all of the threads
   for(int i = 0; i < numthreads; ++i) {
-    cpuargs = (struct Cpuargs *)malloc(sizeof(struct Cpuargs));
-    cpuargs->size = cpusize / numthreads;
-    cpuargs->depth = oldargs->depth;
-    cpuargs->gam = oldargs->gam;
-    cpuargs->prevgam = oldargs->prevgam;
-    cpuargs->pixmap = oldargs->pixmap + gpusize + (i * (cpuargs->size));
-    cpuargs->pixmapmod = oldargs->pixmapmod + gpusize + (i * (cpuargs->size));
-    pthread_create(tids, NULL, cpu_gamma_subset, cpuargs);
+    *cpuargs = (struct Cpuargs *)malloc(sizeof(struct Cpuargs));
+    (*cpuargs)->size = cpusize / numthreads;
+    (*cpuargs)->depth = oldargs->depth;
+    (*cpuargs)->gam = oldargs->gam;
+    (*cpuargs)->prevgam = oldargs->prevgam;
+    (*cpuargs)->pixmap = oldargs->pixmap + gpusize + (i * ((*cpuargs)->size));
+    (*cpuargs)->pixmapmod = oldargs->pixmapmod + gpusize + (i * ((*cpuargs)->size));
+    pthread_create(tids, NULL, cpu_gamma_subset, *cpuargs);
+    ++cpuargs;
     ++tids;
-  }
-  for(int i = 0; i < numthreads; ++i) {
-    --tids;
   }
   
   // Set up the GPU data structures
@@ -106,11 +104,25 @@ void *apply_gamma(void *args)
   // Pass the data back
   cudaMemcpy(oldargs->pixmapmod, gpuargs->pixmapmod, sizeof(unsigned char) * gpuargs->size, cudaMemcpyDeviceToHost);
 
-  // Sync all of the threads
+  // Sync all of the threads and clean up the CPU arguments
+  --cpuargs;
+  --tids;
   for(int i = 0; i < numthreads; ++i) {
     pthread_join(*tids, NULL);
-    ++tids;
+    free(*cpuargs);
+    --cpuargs;
+    --tids;
   }
+  ++cpuargs;
+  ++tids;
+  free(cpuargs);
+  free(tids);
+
+  // Clean up the GPU arguments and deallocate the memory
+  cudaFree(d_gpuargs);
+  cudaFree(gpuargs->pixmap);
+  cudaFree(gpuargs->pixmapmod);
+  free(gpuargs);
 
   return NULL;
 }

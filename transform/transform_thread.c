@@ -57,33 +57,40 @@ void *gamma_subset(void *args)
 void *apply_gamma(void *args)
 {
   struct Gamargs *oldargs = args;
-  struct Gamargs *newargs;
   int numthreads = oldargs->numthreads;
   pthread_t *tids = malloc(sizeof(pthread_t) * numthreads);
+  struct Gamargs **newargs = malloc(sizeof(struct Gamargs *) * numthreads);
   
+  // Launch all of the threads
   for(int i = 0; i < numthreads; ++i) {
-    newargs = malloc(sizeof(struct Gamargs));
-    newargs->width = oldargs->width;
-    newargs->height = oldargs->height / numthreads;
-    newargs->depth = oldargs->depth;
-    newargs->gam = oldargs->gam;
-    newargs->prevgam = oldargs->prevgam;
-    newargs->pixmap = oldargs->pixmap + (i * (4 * oldargs->width *
+    (*newargs) = malloc(sizeof(struct Gamargs));
+    (*newargs)->width = oldargs->width;
+    (*newargs)->height = oldargs->height / numthreads;
+    (*newargs)->depth = oldargs->depth;
+    (*newargs)->gam = oldargs->gam;
+    (*newargs)->prevgam = oldargs->prevgam;
+    (*newargs)->pixmap = oldargs->pixmap + (i * (4 * oldargs->width *
                                         ((oldargs->height) / numthreads)));
-    newargs->pixmapmod = oldargs->pixmapmod + (i * (4 * oldargs->width *
+    (*newargs)->pixmapmod = oldargs->pixmapmod + (i * (4 * oldargs->width *
                                               ((oldargs->height) / numthreads)));
-    pthread_create(tids, NULL, gamma_subset, newargs);
+    pthread_create(tids, NULL, gamma_subset, (*newargs));
+    ++newargs;
     ++tids;
-  }
-  
-  for(int i = 0; i < numthreads; ++i) {
-    --tids;
   }
 
+  // Stop all of the threads
+  --newargs;
+  --tids;
   for(int i = 0; i < numthreads; ++i) {
     pthread_join(*tids, NULL);
-    ++tids;
+    free(*newargs);
+    --newargs;
+    --tids;
   }
+  ++newargs;
+  ++tids;
+  free(tids);
+  free(newargs);
 
   return NULL;
 }
